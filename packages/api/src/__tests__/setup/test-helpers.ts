@@ -3,6 +3,7 @@
 
 import { getTestPrismaClient } from './test-db.js';
 import { JwtAuthService } from '../../adapters/services/JwtAuthService.js';
+import { ListingCategory } from '../../domain/entities/Listing.js';
 
 // Verwende Singleton-Pattern für AuthService, um sicherzustellen,
 // dass derselbe JWT_SECRET verwendet wird wie in der Test-App
@@ -59,7 +60,7 @@ export async function createTestListing(data: {
       userId: data.ownerId, // Prisma Schema verwendet userId, nicht ownerId
       title: data.title,
       description: data.description,
-      category: data.category,
+      category: data.category as ListingCategory,
       type: data.type,
       pricePerDay: data.price ?? null,
     },

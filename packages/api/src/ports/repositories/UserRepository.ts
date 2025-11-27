@@ -14,10 +14,10 @@ export interface CreateUserData {
 
 export interface UpdateUserData {
   name?: string;
-  bio?: string;
-  location?: string;
-  phone?: string;
-  avatar?: string;
+  bio?: string | null;
+  location?: string | null;
+  phone?: string | null;
+  avatar?: string | null;
 }
 
 export interface UserRepository {

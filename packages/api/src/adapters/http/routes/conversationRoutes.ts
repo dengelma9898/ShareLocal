@@ -23,6 +23,7 @@ import {
   CreateMessageInput,
   GetConversationParams,
   GetConversationsQuery,
+  GetMessagesQuery,
 } from '../../../domain/validation/conversationSchemas.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
 import { AuthService } from '../../../ports/services/AuthService.js';

@@ -6,7 +6,12 @@ import { GetUserUseCase } from '../../../application/use-cases/GetUserUseCase.js
 import { GetAllUsersUseCase } from '../../../application/use-cases/GetAllUsersUseCase.js';
 import { UpdateUserUseCase } from '../../../application/use-cases/UpdateUserUseCase.js';
 import { validateParams, validateBody, ValidatedRequest } from '../middleware/validation.js';
-import { getUserParamsSchema, updateUserSchema } from '../../../domain/validation/userSchemas.js';
+import {
+  getUserParamsSchema,
+  updateUserSchema,
+  UpdateUserInput,
+  GetUserParams,
+} from '../../../domain/validation/userSchemas.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
 import { AuthService } from '../../../ports/services/AuthService.js';
 import { UserRepository } from '../../../ports/repositories/UserRepository.js';
@@ -93,7 +98,15 @@ export function createUserRoutes(
       try {
         // Use userId from token - no need to check ownership
         const userId = req.user!.userId;
-        const updateData = req.validated!;
+        const validatedData = req.validated!;
+        // Convert null to undefined for UpdateUserData
+        const updateData: UpdateUserInput = {
+          ...validatedData,
+          bio: validatedData.bio ?? undefined,
+          location: validatedData.location ?? undefined,
+          phone: validatedData.phone ?? undefined,
+          avatar: validatedData.avatar ?? undefined,
+        };
         const user = await updateUserUseCase.execute(userId, updateData);
         return res.json({ data: user.toJSON() });
       } catch (error) {
@@ -119,8 +132,15 @@ export function createUserRoutes(
         }
         
         // Extract update data (exclude id from update)
-        const updateData: UpdateUserInput = { ...validatedData };
-        delete (updateData as { id?: string }).id;
+        const { id: _id, ...rest } = validatedData;
+        // Convert null to undefined for UpdateUserData
+        const updateData: UpdateUserInput = {
+          ...rest,
+          bio: rest.bio ?? undefined,
+          location: rest.location ?? undefined,
+          phone: rest.phone ?? undefined,
+          avatar: rest.avatar ?? undefined,
+        };
         const user = await updateUserUseCase.execute(id, updateData);
         return res.json({ data: user.toJSON() });
       } catch (error) {

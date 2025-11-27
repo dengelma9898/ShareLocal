@@ -17,6 +17,10 @@ import {
   updateListingSchema,
   getListingParamsSchema,
   getListingsQuerySchema,
+  CreateListingInput,
+  UpdateListingInput,
+  GetListingParams,
+  GetListingsQuery,
 } from '../../../domain/validation/listingSchemas.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
 import { AuthService } from '../../../ports/services/AuthService.js';

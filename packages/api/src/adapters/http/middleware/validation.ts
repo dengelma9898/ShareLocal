@@ -3,20 +3,22 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
 
-export interface ValidatedRequest<T> extends Request {
+export interface ValidatedRequest<T = unknown> extends Request {
   validated?: T;
-  validatedParams?: Record<string, unknown>; // Separate storage for params to avoid overwriting
-  validatedBody?: Record<string, unknown>;  // Separate storage for body
-  validatedQuery?: Record<string, unknown>; // Separate storage for query
+  validatedParams?: unknown; // Separate storage for params to avoid overwriting
+  validatedBody?: unknown;  // Separate storage for body
+  validatedQuery?: unknown; // Separate storage for query
 }
 
 export function validateBody<T>(schema: ZodSchema<T>) {
   return (req: ValidatedRequest<T>, res: Response, next: NextFunction) => {
     try {
       const bodyData = schema.parse(req.body);
-      req.validatedBody = bodyData;
+      req.validatedBody = bodyData as unknown;
       // Preserve params if they exist
-      req.validated = { ...req.validatedParams, ...bodyData } as T;
+      const params = (req.validatedParams as Record<string, unknown>) || {};
+      const body = bodyData as Record<string, unknown>;
+      req.validated = { ...params, ...body } as T;
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -61,9 +63,9 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
   return (req: ValidatedRequest<T>, res: Response, next: NextFunction) => {
     try {
       const queryData = schema.parse(req.query);
-      req.validatedQuery = queryData;
+      req.validatedQuery = queryData as unknown;
       // Preserve params and body if they exist
-      req.validated = { ...req.validatedParams, ...req.validatedBody, ...queryData } as T;
+      req.validated = { ...(req.validatedParams as Record<string, unknown> || {}), ...(req.validatedBody as Record<string, unknown> || {}), ...(queryData as Record<string, unknown>) } as T;
       next();
     } catch (error) {
       if (error instanceof ZodError) {
