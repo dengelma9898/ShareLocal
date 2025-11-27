@@ -1,7 +1,9 @@
 {
+  "root": true,
   "extends": ["next/core-web-vitals", "next/typescript"],
   "rules": {
     "react-hooks/exhaustive-deps": "warn"
-  }
+  },
+  "ignorePatterns": [".next", "node_modules", "dist", "build", "playwright-report", "test-results"]
 }
 
