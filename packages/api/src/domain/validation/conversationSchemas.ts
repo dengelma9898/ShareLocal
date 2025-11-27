@@ -40,4 +40,6 @@ export const getConversationParamsSchema = z.object({
 export type CreateConversationInput = z.infer<typeof createConversationSchema>;
 export type CreateMessageInput = z.infer<typeof createMessageSchema>;
 export type GetConversationParams = z.infer<typeof getConversationParamsSchema>;
+export type GetConversationsQuery = z.infer<typeof getConversationsQuerySchema>;
+export type GetMessagesQuery = z.infer<typeof getMessagesQuerySchema>;
 

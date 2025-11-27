@@ -26,6 +26,8 @@ Next.js Frontend Package - Next.js 16 + React 19 + TypeScript
 - Functional Components bevorzugt
 - **Tailwind CSS** für Styling ✅
 - **shadcn/ui** für UI-Komponenten ✅ (Copy-Paste Komponenten, keine Dependency)
+- **Type Safety**: Vermeide `any` Types wo möglich - verwende konkrete Types (Zod-inferred types, React types, etc.)
+- **ESLint**: Keine `eslint-disable` Kommentare - wenn eine Regel zu strikt ist, entferne sie aus der ESLint-Konfiguration statt sie zu deaktivieren
 
 ## Testing instructions
 

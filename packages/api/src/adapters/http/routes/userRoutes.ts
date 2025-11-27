@@ -89,11 +89,11 @@ export function createUserRoutes(
     '/me',
     authenticate(authService, userRepository),
     validateBody(updateUserSchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<any>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<UpdateUserInput>, res, next) => {
       try {
         // Use userId from token - no need to check ownership
         const userId = req.user!.userId;
-        const updateData = req.body;
+        const updateData = req.validated!;
         const user = await updateUserUseCase.execute(userId, updateData);
         return res.json({ data: user.toJSON() });
       } catch (error) {
@@ -108,17 +108,19 @@ export function createUserRoutes(
     authenticate(authService, userRepository),
     validateParams(getUserParamsSchema),
     validateBody(updateUserSchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<{ id: string }>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<GetUserParams & UpdateUserInput>, res, next) => {
       try {
-        // req.validated sollte jetzt sowohl id (aus params) als auch body-Daten enthalten
-        const id = req.validated?.id || (req as any).validatedParams?.id || req.params.id;
+        const validatedData = req.validated!;
+        const { id } = validatedData;
         
         // Check if user is updating their own account
         if (req.user?.userId !== id) {
           throw new AppError(403, 'You can only update your own account');
         }
         
-        const updateData = req.body;
+        // Extract update data (exclude id from update)
+        const updateData: UpdateUserInput = { ...validatedData };
+        delete (updateData as { id?: string }).id;
         const user = await updateUserUseCase.execute(id, updateData);
         return res.json({ data: user.toJSON() });
       } catch (error) {

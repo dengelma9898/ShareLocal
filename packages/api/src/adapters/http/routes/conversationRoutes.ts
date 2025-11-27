@@ -19,6 +19,10 @@ import {
   getConversationsQuerySchema,
   getMessagesQuerySchema,
   getConversationParamsSchema,
+  CreateConversationInput,
+  CreateMessageInput,
+  GetConversationParams,
+  GetConversationsQuery,
 } from '../../../domain/validation/conversationSchemas.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.js';
 import { AuthService } from '../../../ports/services/AuthService.js';
@@ -41,10 +45,10 @@ export function createConversationRoutes(
     '/',
     authenticate(authService, userRepository),
     validateQuery(getConversationsQuerySchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<any>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<GetConversationsQuery>, res, next) => {
       try {
-        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-        const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+        const limit = req.validated?.limit ? parseInt(req.validated.limit, 10) : 50;
+        const offset = req.validated?.offset ? parseInt(req.validated.offset, 10) : 0;
 
         const conversations = await getConversationsUseCase.execute(req.user!.userId, limit, offset);
 
@@ -71,17 +75,18 @@ export function createConversationRoutes(
     '/',
     authenticate(authService, userRepository),
     validateBody(createConversationSchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<any>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<CreateConversationInput>, res, next) => {
       try {
         // Ensure current user is in participants
-        const participantIds = req.body.participantIds || [];
+        const validatedData = req.validated!;
+        const participantIds = validatedData.participantIds || [];
         if (!participantIds.includes(req.user!.userId)) {
           participantIds.push(req.user!.userId);
         }
 
         const conversation = await createConversationUseCase.execute(
           {
-            listingId: req.body.listingId,
+            listingId: validatedData.listingId,
             participantIds,
           },
           req.user!.userId
@@ -100,11 +105,11 @@ export function createConversationRoutes(
     authenticate(authService, userRepository),
     validateParams(getConversationParamsSchema),
     validateQuery(getMessagesQuerySchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<{ id: string }>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<GetConversationParams & GetMessagesQuery>, res, next) => {
       try {
         const { id } = req.validated!;
-        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
-        const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
+        const limit = req.validated?.limit ? parseInt(req.validated.limit, 10) : 50;
+        const offset = req.validated?.offset ? parseInt(req.validated.offset, 10) : 0;
 
         // Verify user is participant
         const conversation = await conversationRepository.findById(id);
@@ -143,7 +148,7 @@ export function createConversationRoutes(
     authenticate(authService, userRepository),
     validateParams(getConversationParamsSchema),
     validateBody(createMessageSchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<{ id: string }>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<GetConversationParams & CreateMessageInput>, res, next) => {
       try {
         const { id } = req.validated!;
 

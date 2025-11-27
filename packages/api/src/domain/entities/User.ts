@@ -43,10 +43,11 @@ export class User {
     return this.data.emailVerified;
   }
 
-  toJSON(): UserEntity {
+  toJSON(): Omit<UserEntity, 'passwordHash'> {
     // Entferne passwordHash falls vorhanden (wird durch Object.assign hinzugefügt)
-    const { passwordHash, ...userData } = this.data as UserEntity & { passwordHash?: string };
-    return userData;
+    const userData = { ...this.data };
+    delete (userData as { passwordHash?: string }).passwordHash;
+    return userData as Omit<UserEntity, 'passwordHash'>;
   }
 
   // Domain Logic Methods

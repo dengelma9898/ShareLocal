@@ -1,7 +1,7 @@
 // Adapter: Prisma Implementation für ListingRepository
 // Konkrete Implementierung des ListingRepository Ports
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import {
   ListingRepository,
   CreateListingData,
@@ -68,7 +68,7 @@ export class PrismaListingRepository implements ListingRepository {
   }
 
   async findAll(filters?: ListingFilters, limit = 50, offset = 0): Promise<Listing[]> {
-    const where: any = {
+    const where: Prisma.ListingWhereInput = {
       deletedAt: null,
     };
 
@@ -133,7 +133,7 @@ export class PrismaListingRepository implements ListingRepository {
   }
 
   async count(filters?: ListingFilters): Promise<number> {
-    const where: any = {
+    const where: Prisma.ListingWhereInput = {
       deletedAt: null,
     };
 

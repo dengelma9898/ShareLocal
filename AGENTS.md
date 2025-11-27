@@ -143,6 +143,8 @@ Jedes Package hat seine eigene `AGENTS.md` mit package-spezifischen Anweisungen.
 - Pre-commit Hooks
 - Code-Reviews erforderlich
 - **Ports & Adapters Architektur** für Backend (siehe `packages/api/AGENTS.md`)
+- **Type Safety**: Vermeide `any` Types wo möglich - verwende konkrete Types (Zod-inferred types, Prisma types, React types, etc.)
+- **ESLint**: Keine `eslint-disable` Kommentare - wenn eine Regel zu strikt ist, entferne sie aus der ESLint-Konfiguration statt sie zu deaktivieren
 
 ### Performance
 - Backend: Caching (Redis), Database Indexing, Pagination

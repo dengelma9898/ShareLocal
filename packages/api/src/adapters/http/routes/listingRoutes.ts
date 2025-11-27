@@ -5,7 +5,7 @@ import { Router } from 'express';
 import { CreateListingUseCase } from '../../../application/use-cases/CreateListingUseCase.js';
 import { UpdateListingUseCase } from '../../../application/use-cases/UpdateListingUseCase.js';
 import { DeleteListingUseCase } from '../../../application/use-cases/DeleteListingUseCase.js';
-import { ListingRepository } from '../../../ports/repositories/ListingRepository.js';
+import { ListingRepository, ListingFilters } from '../../../ports/repositories/ListingRepository.js';
 import {
   validateBody,
   validateParams,
@@ -37,12 +37,12 @@ export function createListingRoutes(
   router.get(
     '/',
     validateQuery(getListingsQuerySchema),
-    async (req: ValidatedRequest<any>, res, next) => {
+    async (req: ValidatedRequest<GetListingsQuery>, res, next) => {
       try {
         const query = req.validated!;
         const limit = query.limit ? parseInt(query.limit, 10) : 50;
         const offset = query.offset ? parseInt(query.offset, 10) : 0;
-        const filters: any = {
+        const filters: ListingFilters = {
           category: query.category,
           type: query.type,
           userId: query.userId,
@@ -79,7 +79,7 @@ export function createListingRoutes(
       try {
         const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
         const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : 0;
-        const filters: any = {
+        const filters: ListingFilters = {
           userId: req.user!.userId,
           search: req.query.search as string | undefined,
         };
@@ -135,11 +135,12 @@ export function createListingRoutes(
     '/',
     authenticate(authService, userRepository),
     validateBody(createListingSchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<any>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<CreateListingInput>, res, next) => {
       try {
         // Set userId from authenticated user
+        const validatedData = req.validated!;
         const listingData = {
-          ...req.body,
+          ...validatedData,
           userId: req.user!.userId,
         };
         const listing = await createListingUseCase.execute(listingData);
@@ -156,9 +157,10 @@ export function createListingRoutes(
     authenticate(authService, userRepository),
     validateParams(getListingParamsSchema),
     validateBody(updateListingSchema),
-    async (req: AuthenticatedRequest & ValidatedRequest<{ id: string } & { validated: any }>, res, next) => {
+    async (req: AuthenticatedRequest & ValidatedRequest<GetListingParams & UpdateListingInput>, res, next) => {
       try {
-        const { id } = req.validated!;
+        const validatedData = req.validated!;
+        const { id } = validatedData;
         const listing = await listingRepository.findById(id);
         
         if (!listing) {
@@ -170,7 +172,10 @@ export function createListingRoutes(
           throw new AppError(403, 'You can only update your own listings');
         }
         
-        const updatedListing = await updateListingUseCase.execute(id, req.body);
+        // Extract update data (exclude id from update)
+        const updateData: UpdateListingInput = { ...validatedData };
+        delete (updateData as { id?: string }).id;
+        const updatedListing = await updateListingUseCase.execute(id, updateData);
         return res.json({ data: updatedListing.toJSON() });
       } catch (error) {
         return next(error);

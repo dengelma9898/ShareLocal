@@ -42,6 +42,8 @@ Das API-Package verwendet **Ports & Adapters (Hexagonal Architecture)** für max
 - Functional patterns bevorzugt
 - Domain Entities enthalten Business Logic
 - Use Cases orchestrieren Domain Logic
+- **Type Safety**: Vermeide `any` Types wo möglich - verwende konkrete Types (Zod-inferred types, Prisma types, etc.)
+- **ESLint**: Keine `eslint-disable` Kommentare - wenn eine Regel zu strikt ist, entferne sie aus der ESLint-Konfiguration statt sie zu deaktivieren
 
 ## Package structure (Ports & Adapters)
 

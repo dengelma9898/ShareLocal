@@ -2,7 +2,6 @@
 // Erstellt eine Test-Instanz der Express App mit Test-Dependencies
 
 import { Express } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { createApp, AppDependencies } from '../../adapters/http/app.js';
 import { PrismaUserRepository } from '../../adapters/database/PrismaUserRepository.js';
 import { PrismaListingRepository } from '../../adapters/database/PrismaListingRepository.js';

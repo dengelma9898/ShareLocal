@@ -1,7 +1,7 @@
 // Global Test Setup
 // Wird einmal vor allen Tests ausgeführt
 
-import { cleanupTestDatabase, migrateTestDatabase } from './test-db.js';
+import { cleanupTestDatabase } from './test-db.js';
 
 export async function setup() {
   console.log('🧪 Setting up test environment...');

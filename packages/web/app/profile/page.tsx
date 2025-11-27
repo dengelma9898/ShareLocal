@@ -127,8 +127,7 @@ export default function ProfilePage() {
         form.reset(newValues);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.name, user?.bio, user?.location, user?.phone, isEditing]);
+  }, [user?.id, user?.name, user?.bio, user?.location, user?.phone, isEditing, form]);
 
   const handleEdit = () => {
     setIsEditing(true);

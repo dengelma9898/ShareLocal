@@ -5,9 +5,9 @@ import { ZodSchema, ZodError } from 'zod';
 
 export interface ValidatedRequest<T> extends Request {
   validated?: T;
-  validatedParams?: any; // Separate storage for params to avoid overwriting
-  validatedBody?: any;  // Separate storage for body
-  validatedQuery?: any; // Separate storage for query
+  validatedParams?: Record<string, unknown>; // Separate storage for params to avoid overwriting
+  validatedBody?: Record<string, unknown>;  // Separate storage for body
+  validatedQuery?: Record<string, unknown>; // Separate storage for query
 }
 
 export function validateBody<T>(schema: ZodSchema<T>) {
