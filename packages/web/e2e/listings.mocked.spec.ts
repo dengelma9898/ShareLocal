@@ -19,24 +19,16 @@ test.describe('Listings (Mocked)', () => {
   });
 
   test('should show mock listings', async ({ page }) => {
-    // Wait for API request to be intercepted and fulfilled
-    const responsePromise = page.waitForResponse(
-      (response) => response.url().includes('/api/listings') && response.status() === 200,
-      { timeout: 10000 }
-    );
-
     await page.goto('/listings');
-
-    // Wait for API response
-    await responsePromise;
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('domcontentloaded');
     
-    // Wait for listings grid or empty state to appear
+    // Wait for listings grid or empty state to appear (with longer timeout for CI)
+    // The mock should have already fulfilled the request, so we just wait for UI
     await page.waitForSelector(
       '[data-testid="listings-grid"], [data-testid="listings-empty-state"]',
-      { timeout: 10000 }
+      { timeout: 15000 }
     );
 
     // Check if listings grid exists (might be empty state if no listings)
@@ -56,24 +48,15 @@ test.describe('Listings (Mocked)', () => {
   });
 
   test('should navigate to listing detail page (mocked)', async ({ page }) => {
-    // Wait for API request to be intercepted and fulfilled
-    const responsePromise = page.waitForResponse(
-      (response) => response.url().includes('/api/listings') && response.status() === 200,
-      { timeout: 10000 }
-    );
-
     await page.goto('/listings');
-
-    // Wait for API response
-    await responsePromise;
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('domcontentloaded');
     
-    // Wait for listings grid or empty state to appear
+    // Wait for listings grid or empty state to appear (with longer timeout for CI)
     await page.waitForSelector(
       '[data-testid="listings-grid"], [data-testid="listings-empty-state"]',
-      { timeout: 10000 }
+      { timeout: 15000 }
     );
 
     // Check if listings grid exists

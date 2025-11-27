@@ -84,17 +84,20 @@ export async function setupApiMocks(page: Page) {
 
   // Mock: Get Listings (handle both GET requests and query parameters)
   // Match both /api/listings and /api/listings?query=params
+  // IMPORTANT: This route must be registered BEFORE the detail route
   await page.route('**/api/listings**', async (route: Route) => {
     const url = route.request().url();
+    const method = route.request().method();
     
-    // Skip if this is a specific listing detail request (has UUID)
-    if (url.match(/\/api\/listings\/[a-f0-9-]{36}/i)) {
+    // Skip if this is a specific listing detail request (has UUID after /listings/)
+    // Pattern: /api/listings/{uuid} but not /api/listings?query or /api/listings/my
+    if (url.match(/\/api\/listings\/[a-f0-9-]{36}(\?|$)/i)) {
       route.continue();
       return;
     }
     
-    // Only handle GET requests for listings list
-    if (route.request().method() !== 'GET') {
+    // Skip POST/PUT/DELETE requests (they go to /api/listings without ID)
+    if (method !== 'GET') {
       route.continue();
       return;
     }
@@ -149,13 +152,20 @@ export async function setupApiMocks(page: Page) {
     });
   });
 
-  // Mock: Get Listing by ID
-  await page.route('**/api/listings/*', async (route: Route) => {
+  // Mock: Get Listing by ID (must be AFTER the list route to avoid conflicts)
+  // Match pattern: /api/listings/{uuid} (exact UUID pattern)
+  await page.route('**/api/listings/[a-f0-9-]{36}**', async (route: Route) => {
     const url = route.request().url();
-    const listingId = url.split('/listings/')[1]?.split('?')[0];
+    const listingId = url.match(/\/api\/listings\/([a-f0-9-]{36})/i)?.[1] || 'mock-listing-1';
+    
+    // Only handle GET requests for listing detail
+    if (route.request().method() !== 'GET') {
+      route.continue();
+      return;
+    }
     
     const mockListing = {
-      id: listingId || 'mock-listing-1',
+      id: listingId,
       title: 'Mock Listing Detail',
       description: 'Detailed description of mock listing',
       category: 'TOOL',
@@ -187,7 +197,7 @@ export async function setupApiMocks(page: Page) {
     });
   });
 
-  // Mock: Create Listing
+  // Mock: Create Listing (POST to /api/listings)
   await page.route('**/api/listings', async (route: Route) => {
     if (route.request().method() === 'POST') {
       const request = route.request();
