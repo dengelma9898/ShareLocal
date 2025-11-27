@@ -132,7 +132,8 @@ export function createUserRoutes(
         }
         
         // Extract update data (exclude id from update)
-        const { id: _id, ...rest } = validatedData;
+        const extractedId = validatedData.id;
+        const { id: _extractedId, ...rest } = validatedData;
         // Convert null to undefined for UpdateUserData
         const updateData: UpdateUserInput = {
           ...rest,
@@ -141,7 +142,7 @@ export function createUserRoutes(
           phone: rest.phone ?? undefined,
           avatar: rest.avatar ?? undefined,
         };
-        const user = await updateUserUseCase.execute(id, updateData);
+        const user = await updateUserUseCase.execute(extractedId, updateData);
         return res.json({ data: user.toJSON() });
       } catch (error) {
         return next(error);
