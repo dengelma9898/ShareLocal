@@ -84,7 +84,7 @@ export class PrismaUserRepository implements UserRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return users.map((userData: Prisma.UserGetPayload<{}>) => new User(userData));
+    return users.map((userData: Prisma.UserGetPayload<Record<string, never>>) => new User(userData));
   }
 
   async count(): Promise<number> {
