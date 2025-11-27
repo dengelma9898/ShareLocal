@@ -124,16 +124,15 @@ export function createUserRoutes(
     async (req: AuthenticatedRequest & ValidatedRequest<GetUserParams & UpdateUserInput>, res, next) => {
       try {
         const validatedData = req.validated!;
-        const { id } = validatedData;
+        const userId = validatedData.id;
         
         // Check if user is updating their own account
-        if (req.user?.userId !== id) {
-          throw new AppError(403, 'You can only update your own account');
+        if (req.user?.userId !== userId) {
+          throw new AppError(403, 'You can only update their own account');
         }
         
         // Extract update data (exclude id from update)
-        const extractedId = validatedData.id;
-        const { id: _extractedId, ...rest } = validatedData;
+        const { id: _userId, ...rest } = validatedData;
         // Convert null to undefined for UpdateUserData
         const updateData: UpdateUserInput = {
           ...rest,
@@ -142,7 +141,7 @@ export function createUserRoutes(
           phone: rest.phone ?? undefined,
           avatar: rest.avatar ?? undefined,
         };
-        const user = await updateUserUseCase.execute(extractedId, updateData);
+        const user = await updateUserUseCase.execute(userId, updateData);
         return res.json({ data: user.toJSON() });
       } catch (error) {
         return next(error);
