@@ -96,12 +96,12 @@ export default function ConversationDetailPage() {
 
   // Get other participant
   const otherParticipant = conversation?.participants.find((p) => p.id !== user?.id);
-  const initials = otherParticipant?.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || '?';
+const initials = otherParticipant?.name
+  .split(' ')
+  .map((n: string) => n[0])
+  .join('')
+  .toUpperCase()
+  .slice(0, 2) || '?';
 
   if (authLoading || isLoadingConversations) {
     return (
@@ -194,7 +194,7 @@ export default function ConversationDetailPage() {
                       <AvatarFallback>
                         {message.sender.name
                           .split(' ')
-                          .map((n) => n[0])
+                          .map((n: string) => n[0])
                           .join('')
                           .toUpperCase()
                           .slice(0, 2)}
