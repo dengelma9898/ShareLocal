@@ -19,7 +19,7 @@ interface OwnerCardProps {
 export function OwnerCard({ owner, showContactButton = true }: OwnerCardProps) {
   const initials = owner.name
     ?.split(' ')
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join('')
     .toUpperCase() || 'U';
 
