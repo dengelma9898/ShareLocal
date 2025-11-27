@@ -1,0 +1,50 @@
+### Conversations API Test File
+### Ersetze {{token}} mit einem gültigen JWT Token (aus auth.http)
+
+@apiUrl = http://localhost:3001
+@token = YOUR_JWT_TOKEN_HERE
+
+### Get all conversations for current user
+GET {{apiUrl}}/api/conversations
+Authorization: Bearer {{token}}
+
+### Get conversations with pagination
+GET {{apiUrl}}/api/conversations?limit=10&offset=0
+Authorization: Bearer {{token}}
+
+### Create a new conversation (with listing)
+POST {{apiUrl}}/api/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "listingId": "YOUR_LISTING_ID_HERE",
+  "participantIds": ["USER_ID_1", "USER_ID_2"]
+}
+
+### Create a new conversation (direct chat, no listing)
+POST {{apiUrl}}/api/conversations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "participantIds": ["USER_ID_1", "USER_ID_2"]
+}
+
+### Get messages for a conversation
+GET {{apiUrl}}/api/conversations/CONVERSATION_ID_HERE/messages
+Authorization: Bearer {{token}}
+
+### Get messages with pagination
+GET {{apiUrl}}/api/conversations/CONVERSATION_ID_HERE/messages?limit=50&offset=0
+Authorization: Bearer {{token}}
+
+### Send a message
+POST {{apiUrl}}/api/conversations/CONVERSATION_ID_HERE/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Hallo! Ist das Angebot noch verfügbar?"
+}
+

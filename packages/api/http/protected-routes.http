@@ -1,0 +1,120 @@
+### ShareLocal API - Protected Routes Examples
+### Diese Endpoints erfordern Authentication (JWT Token)
+
+@baseUrl = http://localhost:3001
+@apiUrl = {{baseUrl}}/api
+
+### ============================================
+### SCHRITT 1: Login um Token zu erhalten
+### ============================================
+
+### Login um Token zu erhalten
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "max.mustermann@example.com",
+  "password": "test123"
+}
+
+### Kopiere den Token aus der Response und setze ihn hier:
+@token = YOUR_TOKEN_HERE
+
+### ============================================
+### PROTECTED USER ROUTES
+### ============================================
+
+### Update own user profile (erfordert Authentication)
+### Max Mustermann's User ID: 37d30bbb-0eba-4a0d-84d7-f30085585620
+PUT {{apiUrl}}/users/37d30bbb-0eba-4a0d-84d7-f30085585620
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Max Mustermann Updated",
+  "bio": "Ich liebe es, Werkzeuge zu teilen!",
+  "location": "Nürnberg, Maxfeld"
+}
+
+### Try to update another user's profile (sollte 403 zurückgeben)
+### Anna Schmidt's User ID: 6ddd6ee5-72b6-4591-9c67-84a1540a3c6a
+PUT {{apiUrl}}/users/6ddd6ee5-72b6-4591-9c67-84a1540a3c6a
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Hacked Name"
+}
+
+### ============================================
+### PROTECTED LISTING ROUTES
+### ============================================
+
+### Create listing (erfordert Authentication)
+POST {{apiUrl}}/listings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Mein neues Angebot",
+  "description": "Dies ist ein Test-Listing, das ich als eingeloggter User erstelle.",
+  "category": "TOOL",
+  "type": "OFFER",
+  "location": "Nürnberg",
+  "latitude": 49.4520,
+  "longitude": 11.0767,
+  "pricePerDay": 10.00,
+  "currency": "EUR",
+  "images": [],
+  "tags": ["test", "werkzeug"]
+}
+
+### Update own listing (erfordert Authentication + Owner-Check)
+### Listing ID von Max Mustermann: f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+PUT {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Title",
+  "description": "Updated description",
+  "available": false
+}
+
+### Delete own listing (erfordert Authentication + Owner-Check)
+DELETE {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Authorization: Bearer {{token}}
+
+### ============================================
+### AUTHENTICATION TESTS (sollten Fehler zurückgeben)
+### ============================================
+
+### Try to create listing without token (sollte 401 zurückgeben)
+POST {{apiUrl}}/listings
+Content-Type: application/json
+
+{
+  "title": "Test",
+  "description": "Test description",
+  "category": "TOOL",
+  "type": "OFFER",
+  "userId": "37d30bbb-0eba-4a0d-84d7-f30085585620"
+}
+
+### Try to update listing with invalid token (sollte 401 zurückgeben)
+PUT {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Authorization: Bearer invalid-token-here
+Content-Type: application/json
+
+{
+  "title": "Test"
+}
+
+### Try to update listing without token (sollte 401 zurückgeben)
+PUT {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Content-Type: application/json
+
+{
+  "title": "Test"
+}
+

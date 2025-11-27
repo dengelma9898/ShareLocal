@@ -1,0 +1,175 @@
+// Prisma Schema für ShareLocal
+// PostgreSQL 17.x mit PostGIS (später für geografische Suche)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String
+  passwordHash  String    // bcrypt hash
+  avatar        String?   // URL zum Avatar-Bild
+  bio           String?   // Kurze Beschreibung
+  location      String?   // Stadt/Adresse (später PostGIS)
+  phone         String?   // Optional für Kontakt
+  role          UserRole  @default(USER)
+  
+  // Relations
+  listings      Listing[]
+  sentMessages  Message[] @relation("MessageSender")
+  conversations ConversationParticipant[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime? // Soft delete
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// ============================================
+// LISTINGS (Ressourcen-Katalog)
+// ============================================
+
+model Listing {
+  id          String      @id @default(uuid())
+  title       String
+  description String      @db.Text
+  category    ListingCategory
+  type        ListingType
+  
+  // Owner
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Location (später PostGIS Point)
+  location    String?     // Stadt/Adresse
+  latitude    Float?       // Für geografische Suche
+  longitude   Float?      // Für geografische Suche
+  
+  // Pricing (optional, da keine Zahlungsabwicklung)
+  pricePerDay Float?      // Optional: Preis pro Tag
+  currency    String?     @default("EUR")
+  
+  // Availability
+  available   Boolean     @default(true)
+  
+  // Images
+  images      String[]    // Array von Bild-URLs
+  
+  // Metadata
+  tags        String[]    // Tags für Suche
+  
+  // Relations
+  conversations Conversation[]
+  
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?   // Soft delete
+
+  @@index([userId])
+  @@index([category])
+  @@index([type])
+  @@index([available])
+  @@index([createdAt])
+  @@index([latitude, longitude]) // Für geografische Suche
+  @@map("listings")
+}
+
+enum ListingCategory {
+  TOOL        // Werkzeuge
+  PLANT       // Pflanzen
+  SKILL       // Fähigkeiten/Services
+  PRODUCT     // Produkte/Gegenstände
+  TIME        // Zeit/Helfer
+  OTHER       // Sonstiges
+}
+
+enum ListingType {
+  OFFER       // Angebot (ich biete an)
+  REQUEST     // Gesuch (ich suche)
+}
+
+// ============================================
+// CHAT SYSTEM
+// ============================================
+
+model Conversation {
+  id        String   @id @default(uuid())
+  
+  // Listing bezug (optional, kann auch direkter Chat sein)
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  
+  // Participants
+  participants ConversationParticipant[]
+  
+  // Messages
+  messages  Message[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([updatedAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Read status
+  lastReadAt     DateTime?
+  
+  // Timestamps
+  joinedAt       DateTime     @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  content        String       @db.Text
+  read           Boolean      @default(false)
+  
+  // Timestamps
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}

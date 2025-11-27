@@ -1,0 +1,97 @@
+### ShareLocal API - Authentication Endpoints
+### Verwende die REST Client Extension in VS Code oder IntelliJ IDEA
+
+@baseUrl = http://localhost:3001
+@apiUrl = {{baseUrl}}/api
+
+### ============================================
+### AUTHENTICATION
+### ============================================
+
+### Register new user
+POST {{apiUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "name": "New User",
+  "password": "securepassword123"
+}
+
+### Login user (verwende Email/Passwort aus Seed-Daten)
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "max.mustermann@example.com",
+  "password": "test123"
+}
+
+### Login user (Anna Schmidt)
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "anna.schmidt@example.com",
+  "password": "test123"
+}
+
+### Login user (Admin)
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@sharelocal.local",
+  "password": "test123"
+}
+
+### ============================================
+### VALIDATION TESTS (sollten Fehler zurückgeben)
+### ============================================
+
+### Invalid email format
+POST {{apiUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "name": "Test User",
+  "password": "password123"
+}
+
+### Password too short
+POST {{apiUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "name": "Test User",
+  "password": "short"
+}
+
+### Missing fields
+POST {{apiUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Invalid login credentials
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "max.mustermann@example.com",
+  "password": "wrongpassword"
+}
+
+### Non-existent user login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com",
+  "password": "password123"
+}
+

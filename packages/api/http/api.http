@@ -1,0 +1,123 @@
+### ShareLocal API - HTTP Test Requests
+### Verwende die REST Client Extension in VS Code oder IntelliJ IDEA
+
+@baseUrl = http://localhost:3001
+@apiUrl = {{baseUrl}}/api
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Root
+GET {{baseUrl}}/
+
+### ============================================
+### USERS
+### ============================================
+
+### Get all users
+GET {{apiUrl}}/users
+Content-Type: application/json
+
+### Get all users with pagination
+GET {{apiUrl}}/users?limit=10&offset=0
+Content-Type: application/json
+
+### Get user by ID (Beispiel UUID - ersetze mit echter UUID aus GET /api/users)
+GET {{apiUrl}}/users/37d30bbb-0eba-4a0d-84d7-f30085585620
+Content-Type: application/json
+
+### Update user (ersetze :id mit einer UUID)
+PUT {{apiUrl}}/users/37d30bbb-0eba-4a0d-84d7-f30085585620
+Content-Type: application/json
+
+{
+  "name": "Max Mustermann Updated",
+  "bio": "Updated bio",
+  "location": "Nürnberg, Maxfeld"
+}
+
+### ============================================
+### LISTINGS
+### ============================================
+
+### Get all listings
+GET {{apiUrl}}/listings
+Content-Type: application/json
+
+### Get all listings with filters
+GET {{apiUrl}}/listings?category=TOOL&type=OFFER&available=true&limit=10
+Content-Type: application/json
+
+### Get listings by category
+GET {{apiUrl}}/listings?category=PLANT
+Content-Type: application/json
+
+### Get listings by type
+GET {{apiUrl}}/listings?type=REQUEST
+Content-Type: application/json
+
+### Search listings
+GET {{apiUrl}}/listings?search=Bohrschrauber
+Content-Type: application/json
+
+### Get listing by ID (Beispiel UUID - ersetze mit echter UUID aus GET /api/listings)
+GET {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Content-Type: application/json
+
+### Create listing (userId ist Beispiel UUID - ersetze mit echter UUID)
+POST {{apiUrl}}/listings
+Content-Type: application/json
+
+{
+  "title": "Rasenmäher zu verleihen",
+  "description": "Elektrischer Rasenmäher, ideal für kleine Gärten. Sehr gut erhalten.",
+  "category": "TOOL",
+  "type": "OFFER",
+  "userId": "37d30bbb-0eba-4a0d-84d7-f30085585620",
+  "location": "Nürnberg, St. Johannis",
+  "latitude": 49.4520,
+  "longitude": 11.0767,
+  "pricePerDay": 5.00,
+  "currency": "EUR",
+  "images": [],
+  "tags": ["werkzeug", "rasenmäher", "garten"]
+}
+
+### Update listing (ersetze :id mit einer UUID)
+PUT {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Content-Type: application/json
+
+{
+  "title": "Updated Title",
+  "description": "Updated description",
+  "available": false
+}
+
+### Delete listing (soft delete, ersetze :id mit einer UUID)
+DELETE {{apiUrl}}/listings/f8505660-1c82-4d6e-9e53-7e94e96b5a0c
+Content-Type: application/json
+
+### ============================================
+### VALIDATION TESTS (sollten Fehler zurückgeben)
+### ============================================
+
+### Invalid user ID (nicht UUID) - sollte 400 zurückgeben
+GET {{apiUrl}}/users/invalid-id
+Content-Type: application/json
+
+### Invalid listing data (fehlende Pflichtfelder) - sollte 400 zurückgeben
+POST {{apiUrl}}/listings
+Content-Type: application/json
+
+{
+  "title": "Test"
+}
+
+### Invalid user update (Name zu kurz) - sollte 400 zurückgeben
+PUT {{apiUrl}}/users/37d30bbb-0eba-4a0d-84d7-f30085585620
+Content-Type: application/json
+
+{
+  "name": "A"
+}
+
