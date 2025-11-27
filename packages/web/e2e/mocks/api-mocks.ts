@@ -82,8 +82,14 @@ export async function setupApiMocks(page: Page) {
     });
   });
 
-  // Mock: Get Listings
-  await page.route('**/api/listings*', async (route: Route) => {
+  // Mock: Get Listings (handle both GET requests and query parameters)
+  await page.route('**/api/listings**', async (route: Route) => {
+    // Only handle GET requests for listings
+    if (route.request().method() !== 'GET') {
+      route.continue();
+      return;
+    }
+    
     const mockListings = [
       {
         id: 'mock-listing-1',
