@@ -1,7 +1,7 @@
 // Adapter: Prisma Conversation Repository Implementation
 // Konkrete Implementierung des ConversationRepository Ports
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { ConversationRepository, ConversationWithParticipants, CreateConversationData } from '../../ports/repositories/ConversationRepository.js';
 import { Conversation } from '../../domain/entities/Conversation.js';
 import { User } from '../../domain/entities/User.js';
@@ -69,7 +69,15 @@ export class PrismaConversationRepository implements ConversationRepository {
       skip: offset,
     });
 
-    return conversationsData.map((conv) => {
+    type ConversationWithIncludes = Prisma.ConversationGetPayload<{
+      include: {
+        participants: { include: { user: true } };
+        listing: true;
+        messages: { include: { sender: true } };
+      };
+    }>;
+
+    return conversationsData.map((conv: ConversationWithIncludes) => {
       const conversation = new Conversation({
         id: conv.id,
         listingId: conv.listingId,
@@ -77,7 +85,7 @@ export class PrismaConversationRepository implements ConversationRepository {
         updatedAt: conv.updatedAt,
       });
 
-      const participants = conv.participants.map((p) => new User(p.user));
+      const participants = conv.participants.map((p: ConversationWithIncludes['participants'][0]) => new User(p.user));
       const listing = conv.listing ? new Listing(conv.listing) : undefined;
 
       // Decrypt lastMessage content if encryption service is available
@@ -121,7 +129,7 @@ export class PrismaConversationRepository implements ConversationRepository {
       where: { listingId },
     });
 
-    return conversationsData.map((data) => new Conversation(data));
+    return conversationsData.map((data: Prisma.ConversationGetPayload<Record<string, never>>) => new Conversation(data));
   }
 
   async findBetweenUsers(userId1: string, userId2: string, listingId?: string): Promise<Conversation | null> {

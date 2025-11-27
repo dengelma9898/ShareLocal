@@ -115,7 +115,7 @@ export class PrismaListingRepository implements ListingRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return listings.map((listingData) => new Listing(listingData));
+    return listings.map((listingData: Prisma.ListingGetPayload<Record<string, never>>) => new Listing(listingData));
   }
 
   async findByUserId(userId: string, limit = 50, offset = 0): Promise<Listing[]> {
@@ -129,7 +129,7 @@ export class PrismaListingRepository implements ListingRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return listings.map((listingData) => new Listing(listingData));
+    return listings.map((listingData: Prisma.ListingGetPayload<Record<string, never>>) => new Listing(listingData));
   }
 
   async count(filters?: ListingFilters): Promise<number> {

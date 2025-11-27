@@ -1,7 +1,7 @@
 // Adapter: Prisma Message Repository Implementation
 // Konkrete Implementierung des MessageRepository Ports
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { MessageRepository, MessageWithSender, CreateMessageData } from '../../ports/repositories/MessageRepository.js';
 import { Message } from '../../domain/entities/Message.js';
 import { User } from '../../domain/entities/User.js';
@@ -78,7 +78,10 @@ export class PrismaMessageRepository implements MessageRepository {
       skip: offset,
     });
 
-    return messagesData.map((data) => {
+    type MessageWithSenderPayload = Prisma.MessageGetPayload<{
+      include: { sender: true };
+    }>;
+    return messagesData.map((data: MessageWithSenderPayload) => {
       // Decrypt message content
       let decryptedContent: string;
       try {

@@ -1,7 +1,7 @@
 // Adapter: Prisma Implementation für UserRepository
 // Konkrete Implementierung des UserRepository Ports
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { UserRepository, CreateUserData, UpdateUserData } from '../../ports/repositories/UserRepository.js';
 import { User } from '../../domain/entities/User.js';
 
@@ -84,7 +84,7 @@ export class PrismaUserRepository implements UserRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return users.map((userData) => new User(userData));
+    return users.map((userData: Prisma.UserGetPayload<{}>) => new User(userData));
   }
 
   async count(): Promise<number> {
