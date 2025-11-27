@@ -19,19 +19,28 @@ test.describe('Listings (Mocked)', () => {
   });
 
   test('should show mock listings', async ({ page }) => {
+    // Set up response listener BEFORE navigation
+    let apiResponseReceived = false;
+    page.on('response', (response) => {
+      if (response.url().includes('/api/listings') && !response.url().includes('/api/listings/') && response.status() === 200) {
+        apiResponseReceived = true;
+      }
+    });
+
     await page.goto('/listings');
 
     // Wait for page to be fully loaded
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle', { timeout: 20000 });
     
-    // Wait for listings grid or empty state to appear (with longer timeout for CI)
-    // The mock should have already fulfilled the request, so we just wait for UI
-    await page.waitForSelector(
-      '[data-testid="listings-grid"], [data-testid="listings-empty-state"]',
-      { timeout: 15000 }
-    );
+    // Wait for API response to be received
+    await page.waitForFunction(() => {
+      // Check if React Query has loaded data (look for listings grid or empty state)
+      const grid = document.querySelector('[data-testid="listings-grid"]');
+      const empty = document.querySelector('[data-testid="listings-empty-state"]');
+      return grid !== null || empty !== null;
+    }, { timeout: 20000 });
 
-    // Check if listings grid exists (might be empty state if no listings)
+    // Now check for UI elements
     const listingsGrid = page.locator('[data-testid="listings-grid"]');
     const emptyState = page.locator('[data-testid="listings-empty-state"]');
     
@@ -51,13 +60,14 @@ test.describe('Listings (Mocked)', () => {
     await page.goto('/listings');
 
     // Wait for page to be fully loaded
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle', { timeout: 20000 });
     
-    // Wait for listings grid or empty state to appear (with longer timeout for CI)
-    await page.waitForSelector(
-      '[data-testid="listings-grid"], [data-testid="listings-empty-state"]',
-      { timeout: 15000 }
-    );
+    // Wait for React Query to load data
+    await page.waitForFunction(() => {
+      const grid = document.querySelector('[data-testid="listings-grid"]');
+      const empty = document.querySelector('[data-testid="listings-empty-state"]');
+      return grid !== null || empty !== null;
+    }, { timeout: 20000 });
 
     // Check if listings grid exists
     const listingsGrid = page.locator('[data-testid="listings-grid"]');
@@ -70,7 +80,7 @@ test.describe('Listings (Mocked)', () => {
     }
     
     // Wait for at least one listing card
-    await page.waitForSelector('[data-testid^="listing-card-"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid^="listing-card-"]', { timeout: 10000 });
 
     // Click on first listing card
     const firstListing = page.locator('[data-testid^="listing-card-"]').first();

@@ -91,15 +91,21 @@ export async function setupApiMocks(page: Page) {
     
     // Skip if this is a specific listing detail request (has UUID after /listings/)
     // Pattern: /api/listings/{uuid} but not /api/listings?query or /api/listings/my
-    if (url.match(/\/api\/listings\/[a-f0-9-]{36}(\?|$)/i)) {
+    // Also skip /api/listings/my (user's own listings)
+    if (url.match(/\/api\/listings\/[a-f0-9-]{36}(\?|$)/i) || url.includes('/api/listings/my')) {
       route.continue();
       return;
     }
     
-    // Skip POST/PUT/DELETE requests (they go to /api/listings without ID)
+    // Only handle GET requests for listings list
     if (method !== 'GET') {
       route.continue();
       return;
+    }
+    
+    // Log for debugging (only in test mode)
+    if (process.env.CI) {
+      console.log(`[MOCK] Intercepting GET request to: ${url}`);
     }
     
     const mockListings = [
