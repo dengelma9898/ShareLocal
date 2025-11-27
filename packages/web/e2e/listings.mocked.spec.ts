@@ -19,12 +19,21 @@ test.describe('Listings (Mocked)', () => {
   });
 
   test('should show mock listings', async ({ page }) => {
+    // Wait for API request to be intercepted and fulfilled
+    const responsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/listings') && response.status() === 200,
+      { timeout: 10000 }
+    );
+
     await page.goto('/listings');
+
+    // Wait for API response
+    await responsePromise;
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('domcontentloaded');
     
-    // Wait for API call to complete (check for listings grid or empty state)
+    // Wait for listings grid or empty state to appear
     await page.waitForSelector(
       '[data-testid="listings-grid"], [data-testid="listings-empty-state"]',
       { timeout: 10000 }
@@ -47,12 +56,21 @@ test.describe('Listings (Mocked)', () => {
   });
 
   test('should navigate to listing detail page (mocked)', async ({ page }) => {
+    // Wait for API request to be intercepted and fulfilled
+    const responsePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/listings') && response.status() === 200,
+      { timeout: 10000 }
+    );
+
     await page.goto('/listings');
+
+    // Wait for API response
+    await responsePromise;
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('domcontentloaded');
     
-    // Wait for API call to complete (check for listings grid or empty state)
+    // Wait for listings grid or empty state to appear
     await page.waitForSelector(
       '[data-testid="listings-grid"], [data-testid="listings-empty-state"]',
       { timeout: 10000 }

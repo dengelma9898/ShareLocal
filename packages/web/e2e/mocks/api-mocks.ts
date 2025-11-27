@@ -83,8 +83,17 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Get Listings (handle both GET requests and query parameters)
+  // Match both /api/listings and /api/listings?query=params
   await page.route('**/api/listings**', async (route: Route) => {
-    // Only handle GET requests for listings
+    const url = route.request().url();
+    
+    // Skip if this is a specific listing detail request (has UUID)
+    if (url.match(/\/api\/listings\/[a-f0-9-]{36}/i)) {
+      route.continue();
+      return;
+    }
+    
+    // Only handle GET requests for listings list
     if (route.request().method() !== 'GET') {
       route.continue();
       return;
