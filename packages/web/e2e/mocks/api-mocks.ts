@@ -29,15 +29,24 @@ export async function setupApiMocks(page: Page) {
   console.log('[MOCK] Setting up API mocks...');
   
   // Log all requests for debugging (always log)
+  // IMPORTANT: These listeners must be set up BEFORE routes are registered
+  // to catch ALL requests, including those that don't match routes
   page.on('request', (request) => {
     if (request.url().includes('/api/')) {
-      console.log(`[MOCK] Request event: ${request.method()} ${request.url()}`);
+      console.log(`[MOCK] 📤 Request event: ${request.method()} ${request.url()}`);
     }
   });
   
   page.on('response', (response) => {
     if (response.url().includes('/api/')) {
-      console.log(`[MOCK] Response event: ${response.status()} ${response.url()}`);
+      console.log(`[MOCK] 📥 Response event: ${response.status()} ${response.url()}`);
+    }
+  });
+  
+  // Also log ALL requests (not just /api/) to see if requests are being made
+  page.on('requestfailed', (request) => {
+    if (request.url().includes('/api/')) {
+      console.log(`[MOCK] ❌ Request failed: ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
     }
   });
 

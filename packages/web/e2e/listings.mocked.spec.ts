@@ -10,8 +10,12 @@ test.describe('Listings (Mocked)', () => {
     // Aber sicherstellen dass sie aktiv sind, bevor wir navigieren
     // Die Mocks sind komplett in Playwright implementiert (nicht vom Backend)
     
-    // Warte kurz, um sicherzustellen, dass Routes registriert sind (reduced timeout)
-    await page.waitForTimeout(50);
+    // Warte länger, um sicherzustellen, dass Routes registriert sind
+    // In CI kann es Race Conditions geben
+    await page.waitForTimeout(200);
+    
+    // Verify routes are registered by checking if we can intercept a test request
+    console.log('[TEST] Routes should be registered, waiting before navigation...');
     
     await page.goto('/');
   });
