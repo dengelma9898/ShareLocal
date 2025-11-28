@@ -130,7 +130,9 @@ export async function setupApiMocks(page: Page) {
   // Match both /api/listings and /api/listings?query=params
   // IMPORTANT: This route must be registered FIRST (before detail route)
   // Match ANY URL containing /api/listings (including full URLs with localhost:3001)
+  // Use multiple patterns to ensure matching
   await page.route('**/api/listings**', async (route: Route) => {
+    console.log(`[MOCK] 🔵 Route handler called for: ${route.request().url()}`);
     const url = route.request().url();
     const method = route.request().method();
     
@@ -369,6 +371,14 @@ export async function setupApiMocks(page: Page) {
   });
   
   console.log('[MOCK] ✅ All API mocks set up');
+  console.log('[MOCK] Registered routes:');
+  console.log('[MOCK]   - **/api/health**');
+  console.log('[MOCK]   - **/api/auth/register**');
+  console.log('[MOCK]   - **/api/auth/login**');
+  console.log('[MOCK]   - **/api/listings** (GET list)');
+  console.log('[MOCK]   - **/api/listings** (POST create)');
+  console.log('[MOCK]   - **/api/users/**');
+  console.log('[MOCK]   - **/api/conversations**');
 }
 
 /**

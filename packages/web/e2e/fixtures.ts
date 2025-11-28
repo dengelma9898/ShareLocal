@@ -59,13 +59,15 @@ export const test = base.extend<TestFixtures>({
   // WICHTIG: Mocks müssen VOR der ersten Navigation gesetzt werden
   page: async ({ page, useMocks }, use) => {
     if (useMocks) {
+      console.log('[FIXTURE] Setting up API mocks...');
       // Setze Mocks BEVOR die Seite verwendet wird
       // Dies stellt sicher, dass alle Routes registriert sind, bevor Requests gemacht werden
       await setupApiMocks(page);
       
-      // Warte kurz, um sicherzustellen, dass Routes registriert sind
-      // Dies hilft bei Race Conditions in CI (reduced timeout for mocks)
-      await page.waitForTimeout(50);
+      // Warte länger, um sicherzustellen, dass Routes registriert sind
+      // Dies hilft bei Race Conditions in CI
+      await page.waitForTimeout(200);
+      console.log('[FIXTURE] API mocks set up, routes should be registered');
     }
     
     await use(page);
