@@ -17,8 +17,9 @@ export default defineConfig({
   
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    trace: process.env.CI ? 'on-first-retry' : 'on-first-retry', // Trace on retry in CI
+    screenshot: 'only-on-failure', // Screenshot on failure
+    video: process.env.CI ? 'retain-on-failure' : 'off', // Video only in CI on failure
     // Increase action timeout for CI
     actionTimeout: process.env.CI ? 30000 : 10000,
     navigationTimeout: process.env.CI ? 60000 : 30000,
