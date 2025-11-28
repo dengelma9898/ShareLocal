@@ -16,9 +16,8 @@ export interface MockResponse {
  * Die Mocks werden komplett in Playwright implementiert (nicht vom Backend).
  * Sie fangen HTTP-Requests ab, bevor sie das Backend erreichen.
  * 
- * Route-Matching: Playwright routes matchen URLs mit ** wildcards:
- * - **/api/listings** matches: http://localhost:3001/api/listings, /api/listings, etc.
- * - Patterns sind sehr generisch und sollten alle Varianten abdecken
+ * Route-Matching: Playwright routes matchen URLs mit ** wildcards.
+ * Patterns sind sehr generisch und sollten alle Varianten abdecken.
  * 
  * @param page - Playwright Page instance
  */
