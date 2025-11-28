@@ -18,7 +18,12 @@ export async function setupApiMocks(page: Page) {
   // Dies stellt sicher, dass Routes vor allen Requests registriert sind
   
   // Mock: Health Check
-  await page.route('**/api/health', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/health
+  await page.route('**/api/health**', async (route: Route) => {
+    const url = route.request().url();
+    if (process.env.CI) {
+      console.log(`[MOCK] Health check: ${url}`);
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -30,7 +35,8 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Register User
-  await page.route('**/api/auth/register', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/auth/register
+  await page.route('**/api/auth/register**', async (route: Route) => {
     const request = route.request();
     const postData = request.postDataJSON();
     
@@ -60,7 +66,8 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Login
-  await page.route('**/api/auth/login', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/auth/login
+  await page.route('**/api/auth/login**', async (route: Route) => {
     const request = route.request();
     const postData = request.postDataJSON();
     
@@ -241,7 +248,8 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Create Listing (POST to /api/listings)
-  await page.route('**/api/listings', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/listings
+  await page.route('**/api/listings**', async (route: Route) => {
     if (route.request().method() === 'POST') {
       const request = route.request();
       const postData = request.postDataJSON();
@@ -274,7 +282,8 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Get User
-  await page.route('**/api/users/*', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/users/
+  await page.route('**/api/users/**', async (route: Route) => {
     const mockUser = {
       id: 'mock-user-123',
       email: 'test@example.com',
@@ -298,7 +307,8 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Get Conversations
-  await page.route('**/api/conversations*', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/conversations
+  await page.route('**/api/conversations**', async (route: Route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -312,7 +322,8 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Create Conversation
-  await page.route('**/api/conversations', async (route: Route) => {
+  // Very generic pattern: matches ANY URL containing /api/conversations
+  await page.route('**/api/conversations**', async (route: Route) => {
     if (route.request().method() === 'POST') {
       const request = route.request();
       const postData = request.postDataJSON();
