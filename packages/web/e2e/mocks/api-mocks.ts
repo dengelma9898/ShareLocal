@@ -11,13 +11,20 @@ export interface MockResponse {
 
 /**
  * Setup API Mocks für alle Backend-Endpoints
+ * WICHTIG: Mocks müssen VOR der Navigation gesetzt werden
  */
 export async function setupApiMocks(page: Page) {
+  // Warte bis die Seite bereit ist, bevor Routes gesetzt werden
+  // Dies stellt sicher, dass Routes vor allen Requests registriert sind
+  
   // Mock: Health Check
-  await page.route('**/api/health', (route: Route) => {
-    route.fulfill({
+  await page.route('**/api/health', async (route: Route) => {
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({ status: 'ok', message: 'ShareLocal API is running (mocked)' }),
     });
   });
@@ -70,9 +77,12 @@ export async function setupApiMocks(page: Page) {
     
     const mockToken = `mock-jwt-token-${Date.now()}`;
     
-    route.fulfill({
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({
         data: {
           user: mockUser,
@@ -143,9 +153,19 @@ export async function setupApiMocks(page: Page) {
       },
     ];
     
-    route.fulfill({
+    // Log for debugging
+    if (process.env.CI) {
+      console.log(`[MOCK] Fulfilling GET /api/listings with ${mockListings.length} listings`);
+    }
+    
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
       body: JSON.stringify({
         data: mockListings,
         pagination: {
@@ -166,7 +186,7 @@ export async function setupApiMocks(page: Page) {
     
     // Only handle GET requests for listing detail
     if (route.request().method() !== 'GET') {
-      route.continue();
+      await route.continue();
       return;
     }
     
@@ -187,9 +207,12 @@ export async function setupApiMocks(page: Page) {
       updatedAt: new Date().toISOString(),
     };
     
-    route.fulfill({
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({
         data: {
           ...mockListing,
@@ -220,16 +243,19 @@ export async function setupApiMocks(page: Page) {
         updatedAt: new Date().toISOString(),
       };
       
-      route.fulfill({
+      await route.fulfill({
         status: 201,
         contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
         body: JSON.stringify({
           data: mockListing,
         }),
       });
     } else {
-      // GET request - use existing mock
-      route.continue();
+      // GET request - use existing mock (will be handled by **/api/listings** route)
+      await route.continue();
     }
   });
 
@@ -245,9 +271,12 @@ export async function setupApiMocks(page: Page) {
       updatedAt: new Date().toISOString(),
     };
     
-    route.fulfill({
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({
         data: mockUser,
       }),
@@ -256,9 +285,12 @@ export async function setupApiMocks(page: Page) {
 
   // Mock: Get Conversations
   await page.route('**/api/conversations*', async (route: Route) => {
-    route.fulfill({
+    await route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: JSON.stringify({
         data: [],
       }),
@@ -278,15 +310,18 @@ export async function setupApiMocks(page: Page) {
         updatedAt: new Date().toISOString(),
       };
       
-      route.fulfill({
+      await route.fulfill({
         status: 201,
         contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
         body: JSON.stringify({
           data: mockConversation,
         }),
       });
     } else {
-      route.continue();
+      await route.continue();
     }
   });
 }

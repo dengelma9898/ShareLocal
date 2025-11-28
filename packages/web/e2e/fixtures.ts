@@ -56,9 +56,16 @@ export const test = base.extend<TestFixtures>({
   useMocks: [false, { option: true }],
   
   // Setup Mocks wenn useMocks = true
+  // WICHTIG: Mocks müssen VOR der ersten Navigation gesetzt werden
   page: async ({ page, useMocks }, use) => {
     if (useMocks) {
+      // Setze Mocks BEVOR die Seite verwendet wird
+      // Dies stellt sicher, dass alle Routes registriert sind, bevor Requests gemacht werden
       await setupApiMocks(page);
+      
+      // Warte kurz, um sicherzustellen, dass Routes registriert sind
+      // Dies hilft bei Race Conditions in CI
+      await page.waitForTimeout(100);
     }
     
     await use(page);

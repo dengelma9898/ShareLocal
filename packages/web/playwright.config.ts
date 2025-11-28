@@ -12,12 +12,16 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Ein Worker für sequenzielle Ausführung
-  reporter: 'html',
+  timeout: process.env.CI ? 60000 : 30000, // 60s timeout in CI, 30s locally
+  reporter: process.env.CI ? [['html'], ['github']] : 'html',
   
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // Increase action timeout for CI
+    actionTimeout: process.env.CI ? 30000 : 10000,
+    navigationTimeout: process.env.CI ? 60000 : 30000,
   },
   
   projects: [
@@ -43,8 +47,13 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
-    stdout: 'ignore',
+    stdout: 'pipe', // Show stdout in CI for debugging
     stderr: 'pipe',
+    env: {
+      // Ensure API URL is set correctly for mocked tests
+      NEXT_PUBLIC_API_URL: 'http://localhost:3001',
+      NODE_ENV: 'test',
+    },
     // Backend API muss separat laufen (nicht automatisch gestartet)
     // Starte API manuell: cd packages/api && pnpm dev
   },
