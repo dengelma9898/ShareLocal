@@ -64,8 +64,8 @@ export const test = base.extend<TestFixtures>({
       await setupApiMocks(page);
       
       // Warte kurz, um sicherzustellen, dass Routes registriert sind
-      // Dies hilft bei Race Conditions in CI
-      await page.waitForTimeout(100);
+      // Dies hilft bei Race Conditions in CI (reduced timeout for mocks)
+      await page.waitForTimeout(50);
     }
     
     await use(page);

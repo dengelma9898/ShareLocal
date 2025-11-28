@@ -12,7 +12,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Ein Worker für sequenzielle Ausführung
-  timeout: process.env.CI ? 60000 : 30000, // 60s timeout in CI, 30s locally
+  // Shorter timeout for mocked tests (no real API calls)
+  timeout: process.env.CI ? 30000 : 15000, // 30s in CI, 15s locally (reduced for mocks)
   reporter: process.env.CI ? [['html'], ['github']] : 'html',
   
   use: {
@@ -20,24 +21,34 @@ export default defineConfig({
     trace: process.env.CI ? 'on-first-retry' : 'on-first-retry', // Trace on retry in CI
     screenshot: 'only-on-failure', // Screenshot on failure
     video: process.env.CI ? 'retain-on-failure' : 'off', // Video only in CI on failure
-    // Increase action timeout for CI
-    actionTimeout: process.env.CI ? 30000 : 10000,
-    navigationTimeout: process.env.CI ? 60000 : 30000,
+    // Reduced timeouts for mocked tests (no network latency)
+    actionTimeout: process.env.CI ? 15000 : 5000, // 15s in CI, 5s locally
+    navigationTimeout: process.env.CI ? 30000 : 15000, // 30s in CI, 15s locally
   },
   
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Longer timeouts for real API tests
+        actionTimeout: process.env.CI ? 30000 : 10000,
+        navigationTimeout: process.env.CI ? 60000 : 30000,
+      },
       testIgnore: /.*\.mocked\.spec\.ts/, // Ignoriere Mock-Tests im Real-Mode
     },
-    // Mock-Mode Projekt (keine API nötig)
+    // Mock-Mode Projekt (keine API nötig) - kürzere Timeouts
     {
       name: 'chromium-mocked',
       use: { 
         ...devices['Desktop Chrome'],
+        // Shorter timeouts for mocked tests (no network latency)
+        actionTimeout: process.env.CI ? 10000 : 5000, // 10s in CI, 5s locally
+        navigationTimeout: process.env.CI ? 20000 : 10000, // 20s in CI, 10s locally
       },
       testMatch: /.*\.mocked\.spec\.ts/, // Nur Mock-Tests
+      // Shorter timeout for mocked tests
+      timeout: process.env.CI ? 20000 : 10000, // 20s in CI, 10s locally
     },
   ],
 

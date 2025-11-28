@@ -94,7 +94,7 @@ test.describe('Listings (Mocked)', () => {
                !url.includes('/api/listings/my') &&
                response.status() === 200;
       },
-      { timeout: 30000 }
+      { timeout: 10000 } // Reduced timeout for mocked tests (10s)
     );
 
     await page.goto('/listings', { waitUntil: 'domcontentloaded' });
@@ -106,8 +106,8 @@ test.describe('Listings (Mocked)', () => {
       console.warn('[TEST] API response not received within timeout, continuing anyway');
     }
 
-    // Wait for page to be fully loaded
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    // Wait for page to be fully loaded (shorter timeout for mocks)
+    await page.waitForLoadState('networkidle', { timeout: 10000 });
     
     // Wait for React Query to load data
     await page.waitForFunction(
@@ -117,7 +117,7 @@ test.describe('Listings (Mocked)', () => {
         const loading = document.querySelector('[data-testid="listings-page-header"]');
         return loading !== null && (grid !== null || empty !== null);
       },
-      { timeout: 30000, polling: 500 }
+      { timeout: 10000, polling: 500 } // Reduced timeout: 10s (was 30s)
     );
 
     // Check if listings grid exists
@@ -130,8 +130,8 @@ test.describe('Listings (Mocked)', () => {
       return;
     }
     
-    // Wait for at least one listing card
-    await page.waitForSelector('[data-testid^="listing-card-"]', { timeout: 10000 });
+    // Wait for at least one listing card (shorter timeout for mocks)
+    await page.waitForSelector('[data-testid^="listing-card-"]', { timeout: 5000 });
 
     // Click on first listing card
     const firstListing = page.locator('[data-testid^="listing-card-"]').first();
