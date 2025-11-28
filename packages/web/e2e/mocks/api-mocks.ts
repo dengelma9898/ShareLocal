@@ -127,14 +127,21 @@ export async function setupApiMocks(page: Page) {
   });
 
   // Mock: Get Listings (handle both GET requests and query parameters)
-  // Match both /api/listings and /api/listings?query=params
-  // IMPORTANT: This route must be registered FIRST (before detail route)
-  // Match ANY URL containing /api/listings (including full URLs with localhost:3001)
-  // Use multiple patterns to ensure matching
-  await page.route('**/api/listings**', async (route: Route) => {
-    console.log(`[MOCK] 🔵 Route handler called for: ${route.request().url()}`);
+  // IMPORTANT: Use function matcher for better control and debugging
+  // This route must be registered FIRST (before detail route)
+  await page.route((url) => {
+    // Match /api/listings but NOT /api/listings/{uuid} or /api/listings/my
+    const isListRequest = url.includes('/api/listings') && 
+                          !url.match(/\/api\/listings\/[a-f0-9-]{36}/i) &&
+                          !url.includes('/api/listings/my');
+    if (isListRequest) {
+      console.log(`[MOCK] 🔵 Route matcher matched: ${url}`);
+    }
+    return isListRequest;
+  }, async (route: Route) => {
     const url = route.request().url();
     const method = route.request().method();
+    console.log(`[MOCK] 🔵 Route handler called for: ${method} ${url}`);
     
     // Parse URL to check path
     let urlPath: string;
