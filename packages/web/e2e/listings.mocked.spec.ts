@@ -10,8 +10,8 @@ test.describe('Listings (Mocked)', () => {
     // Aber sicherstellen dass sie aktiv sind, bevor wir navigieren
     // Die Mocks sind komplett in Playwright implementiert (nicht vom Backend)
     
-    // Warte kurz, um sicherzustellen, dass Routes registriert sind
-    await page.waitForTimeout(200);
+    // Warte kurz, um sicherzustellen, dass Routes registriert sind (reduced timeout)
+    await page.waitForTimeout(50);
     
     await page.goto('/');
   });
@@ -19,8 +19,8 @@ test.describe('Listings (Mocked)', () => {
   test('should display listings page (mocked)', async ({ page }) => {
     await page.goto('/listings');
 
-    // Should show listings page header
-    await expect(page.locator('[data-testid="listings-page-header"]')).toBeVisible({ timeout: 10000 });
+    // Should show listings page header (shorter timeout for mocks)
+    await expect(page.locator('[data-testid="listings-page-header"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('h1')).toContainText(/Angebote/i);
   });
 
@@ -39,21 +39,28 @@ test.describe('Listings (Mocked)', () => {
         }
         return isListingsList;
       },
-      { timeout: 30000 }
+      { timeout: 10000 } // Reduced timeout for mocked tests (10s)
     );
 
     await page.goto('/listings', { waitUntil: 'domcontentloaded' });
 
     // Wait for API response (this verifies the mock is working)
     try {
-      await responsePromise;
+      const response = await responsePromise;
+      if (process.env.CI) {
+        const body = await response.json();
+        console.log(`[TEST] Mock response body:`, JSON.stringify(body, null, 2));
+      }
     } catch (error) {
-      // If response doesn't come, log for debugging but continue
-      console.warn('[TEST] API response not received within timeout, continuing anyway');
+      // If response doesn't come, log for debugging
+      console.error('[TEST] API response not received within timeout!');
+      console.error('[TEST] This means the mock route is not matching the request');
+      console.error('[TEST] Error:', error);
+      // Continue anyway to see what happens
     }
 
-    // Wait for page to be fully loaded
-    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    // Wait for page to be fully loaded (shorter timeout for mocks)
+    await page.waitForLoadState('networkidle', { timeout: 10000 });
     
     // Wait for React Query to render the data
     // Use a more robust check that waits for either grid or empty state
@@ -65,7 +72,7 @@ test.describe('Listings (Mocked)', () => {
         // Make sure page is loaded (header exists) and either grid or empty state exists
         return loading !== null && (grid !== null || empty !== null);
       },
-      { timeout: 30000, polling: 500 } // Poll every 500ms
+      { timeout: 10000, polling: 500 } // Reduced timeout: 10s (was 30s)
     );
 
     // Now check for UI elements
@@ -78,9 +85,9 @@ test.describe('Listings (Mocked)', () => {
     
     expect(gridVisible || emptyVisible).toBe(true);
     
-    // If grid is visible, should have at least one listing card
+    // If grid is visible, should have at least one listing card (shorter timeout for mocks)
     if (gridVisible) {
-      await expect(page.locator('[data-testid^="listing-card-"]').first()).toBeVisible({ timeout: 5000 });
+      await expect(page.locator('[data-testid^="listing-card-"]').first()).toBeVisible({ timeout: 3000 });
     }
   });
 
@@ -137,12 +144,12 @@ test.describe('Listings (Mocked)', () => {
     const firstListing = page.locator('[data-testid^="listing-card-"]').first();
     await firstListing.click();
     
-    // Should navigate to listing detail page
-    await expect(page).toHaveURL(/\/listings\/[a-f0-9-]+/, { timeout: 10000 });
+    // Should navigate to listing detail page (shorter timeout for mocks)
+    await expect(page).toHaveURL(/\/listings\/[a-f0-9-]+/, { timeout: 5000 });
     
-    // Wait for page to load
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for page to load (shorter timeout for mocks)
+    await page.waitForLoadState('networkidle', { timeout: 5000 });
+    await page.waitForTimeout(500); // Reduced wait time
     
     // Should show listing details - check for any visible content
     // The page should have loaded content (either heading, card, or main content)
