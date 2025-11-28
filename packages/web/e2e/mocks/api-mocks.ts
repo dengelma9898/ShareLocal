@@ -19,6 +19,8 @@ export interface MockResponse {
  * Route-Matching: Playwright routes matchen URLs mit ** wildcards:
  * - **/api/listings** matches: http://localhost:3001/api/listings, /api/listings, etc.
  * - Patterns sind sehr generisch und sollten alle Varianten abdecken
+ * 
+ * @param page - Playwright Page instance
  */
 export async function setupApiMocks(page: Page) {
   // Warte bis die Seite bereit ist, bevor Routes gesetzt werden
