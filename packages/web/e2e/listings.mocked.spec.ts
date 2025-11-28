@@ -25,6 +25,19 @@ test.describe('Listings (Mocked)', () => {
   });
 
   test('should show mock listings', async ({ page }) => {
+    // Log all network requests for debugging
+    page.on('request', (request) => {
+      if (request.url().includes('/api/listings')) {
+        console.log(`[TEST] Request: ${request.method()} ${request.url()}`);
+      }
+    });
+    
+    page.on('response', (response) => {
+      if (response.url().includes('/api/listings')) {
+        console.log(`[TEST] Response: ${response.status()} ${response.url()}`);
+      }
+    });
+    
     // Set up response listener BEFORE navigation to verify mock is working
     let apiResponseReceived = false;
     const responsePromise = page.waitForResponse(
@@ -36,6 +49,7 @@ test.describe('Listings (Mocked)', () => {
                                response.status() === 200;
         if (isListingsList) {
           apiResponseReceived = true;
+          console.log(`[TEST] ✅ Mock response received: ${url}`);
         }
         return isListingsList;
       },
@@ -47,13 +61,11 @@ test.describe('Listings (Mocked)', () => {
     // Wait for API response (this verifies the mock is working)
     try {
       const response = await responsePromise;
-      if (process.env.CI) {
-        const body = await response.json();
-        console.log(`[TEST] Mock response body:`, JSON.stringify(body, null, 2));
-      }
+      const body = await response.json();
+      console.log(`[TEST] ✅ Mock response body:`, JSON.stringify(body, null, 2));
     } catch (error) {
       // If response doesn't come, log for debugging
-      console.error('[TEST] API response not received within timeout!');
+      console.error('[TEST] ❌ API response not received within timeout!');
       console.error('[TEST] This means the mock route is not matching the request');
       console.error('[TEST] Error:', error);
       // Continue anyway to see what happens
