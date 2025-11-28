@@ -135,50 +135,51 @@ export async function setupApiMocks(page: Page) {
     });
   });
 
-  // Mock: Get Listings List (GET /api/listings)
-  // IMPORTANT: This route must be registered BEFORE the detail route
-  // Use function matcher for precise control
-  await page.route((url) => {
-    // Handle both string and URL object
-    let urlPath: string;
-    if (typeof url === 'string') {
-      urlPath = url.includes('?') ? url.split('?')[0] : url;
-    } else {
-      // URL object
-      urlPath = url.pathname;
-    }
-    
-    // Match GET /api/listings but NOT:
-    // - /api/listings/{uuid} (detail page)
-    // - /api/listings/my (user's own listings)
-    const isListRequest = urlPath === '/api/listings' || 
-                         (urlPath.startsWith('/api/listings') && 
-                          !urlPath.match(/\/api\/listings\/[a-f0-9-]{36}/i) &&
-                          !urlPath.includes('/api/listings/my'));
-    
-    if (isListRequest) {
-      const urlStr = typeof url === 'string' ? url : url.toString();
-      console.log(`[MOCK] 🔵 Route matcher matched GET list: ${urlStr} (path: ${urlPath})`);
-    }
-    return isListRequest;
-  }, async (route: Route) => {
+  // Mock: Listings endpoint - handles GET list, GET detail, and POST create
+  // IMPORTANT: Use a single route handler that checks the method
+  await page.route('**/api/listings**', async (route: Route) => {
     const url = route.request().url();
     const method = route.request().method();
     
-    // Only handle GET requests
-    if (method !== 'GET') {
-      console.log(`[MOCK] Skipping non-GET request: ${method} ${url}`);
-      await route.continue();
+    // Parse URL to check path
+    let urlPath: string;
+    try {
+      const urlObj = new URL(url);
+      urlPath = urlObj.pathname;
+    } catch {
+      urlPath = url.split('?')[0];
+    }
+    
+    // Skip /api/listings/my (user's own listings)
+    if (urlPath.includes('/api/listings/my')) {
+      console.log(`[MOCK] Skipping /api/listings/my: ${url}`);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          data: [],
+          pagination: { limit: 50, offset: 0, total: 0, totalPages: 0 },
+        }),
+      });
       return;
     }
     
-    console.log(`[MOCK] ✅ Handling GET /api/listings: ${url}`);
-    
-    const mockListings = [
-      {
-        id: 'mock-listing-1',
-        title: 'Mock Listing 1',
-        description: 'This is a mock listing for testing',
+    // Handle GET /api/listings/{id} - Detail page
+    const detailMatch = urlPath.match(/\/api\/listings\/([a-f0-9-]{36})/i);
+    if (detailMatch && method === 'GET') {
+      const listingId = detailMatch[1];
+      console.log(`[MOCK] ✅ Handling GET /api/listings/${listingId}`);
+      
+      // Use the requested ID or fallback to a valid UUID
+      const validId = listingId.match(/^[a-f0-9-]{36}$/i) ? listingId : '123e4567-e89b-12d3-a456-426614174001';
+      
+      const mockListing = {
+        id: validId,
+        title: 'Mock Listing Detail',
+        description: 'Detailed description of mock listing',
         category: 'TOOL',
         type: 'OFFER',
         userId: 'mock-user-123',
@@ -190,171 +191,131 @@ export async function setupApiMocks(page: Page) {
         tags: ['test', 'mock'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'mock-listing-2',
-        title: 'Mock Listing 2',
-        description: 'Another mock listing',
-        category: 'PLANT',
-        type: 'REQUEST',
-        userId: 'mock-user-456',
-        location: 'München',
-        pricePerDay: null,
-        currency: null,
+        owner: {
+          id: 'mock-user-123',
+          name: 'Mock Owner',
+          email: 'owner@example.com',
+        },
+      };
+      
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+        body: JSON.stringify({
+          data: mockListing,
+        }),
+      });
+      return;
+    }
+    
+    // Handle GET /api/listings - List page
+    if (method === 'GET' && urlPath === '/api/listings') {
+      console.log(`[MOCK] ✅ Handling GET /api/listings`);
+      
+      const mockListings = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174001',
+          title: 'Mock Listing 1',
+          description: 'This is a mock listing for testing',
+          category: 'TOOL',
+          type: 'OFFER',
+          userId: 'mock-user-123',
+          location: 'Nürnberg',
+          pricePerDay: 10.0,
+          currency: 'EUR',
+          available: true,
+          images: [],
+          tags: ['test', 'mock'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: '123e4567-e89b-12d3-a456-426614174002',
+          title: 'Mock Listing 2',
+          description: 'Another mock listing',
+          category: 'PLANT',
+          type: 'REQUEST',
+          userId: 'mock-user-456',
+          location: 'München',
+          pricePerDay: null,
+          currency: null,
+          available: true,
+          images: [],
+          tags: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+      
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+        body: JSON.stringify({
+          data: mockListings,
+          pagination: {
+            limit: 50,
+            offset: 0,
+            total: mockListings.length,
+            totalPages: 1,
+          },
+        }),
+      });
+      return;
+    }
+    
+    // Handle POST /api/listings - Create listing
+    if (method === 'POST' && urlPath === '/api/listings') {
+      console.log(`[MOCK] ✅ Handling POST /api/listings`);
+      
+      const request = route.request();
+      const postData = request.postDataJSON();
+      
+      const mockListing = {
+        id: `mock-listing-${Date.now()}`,
+        ...postData,
+        userId: 'mock-user-123',
         available: true,
-        images: [],
-        tags: [],
+        images: postData.images || [],
+        tags: postData.tags || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      },
-    ];
-    
-    const responseBody = {
-      data: mockListings,
-      pagination: {
-        limit: 50,
-        offset: 0,
-        total: mockListings.length,
-        totalPages: 1,
-      },
-    };
-    
-    console.log(`[MOCK] ✅ Fulfilling GET /api/listings with ${mockListings.length} listings`);
-    
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-      body: JSON.stringify(responseBody),
-    });
-  });
-
-  // Mock: Get Listing Detail (GET /api/listings/{id})
-  await page.route((url) => {
-    // Handle both string and URL object
-    let urlPath: string;
-    if (typeof url === 'string') {
-      urlPath = url.includes('?') ? url.split('?')[0] : url;
-    } else {
-      // URL object
-      urlPath = url.pathname;
-    }
-    
-    // Match /api/listings/{uuid} pattern
-    const isDetailRequest = urlPath.match(/\/api\/listings\/[a-f0-9-]{36}/i);
-    
-    if (isDetailRequest) {
-      const urlStr = typeof url === 'string' ? url : url.toString();
-      console.log(`[MOCK] 🔵 Route matcher matched GET detail: ${urlStr}`);
-    }
-    return !!isDetailRequest;
-  }, async (route: Route) => {
-    const url = route.request().url();
-    const method = route.request().method();
-    
-    if (method !== 'GET') {
-      await route.continue();
+      };
+      
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+        body: JSON.stringify({
+          data: mockListing,
+        }),
+      });
       return;
     }
     
-    const listingId = url.match(/\/api\/listings\/([a-f0-9-]{36})/i)?.[1] || 'mock-listing-1';
-    
-    console.log(`[MOCK] ✅ Handling GET /api/listings/${listingId}`);
-    
-    const mockListing = {
-      id: listingId,
-      title: 'Mock Listing Detail',
-      description: 'Detailed description of mock listing',
-      category: 'TOOL',
-      type: 'OFFER',
-      userId: 'mock-user-123',
-      location: 'Nürnberg',
-      pricePerDay: 10.0,
-      currency: 'EUR',
-      available: true,
-      images: [],
-      tags: ['test', 'mock'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      owner: {
-        id: 'mock-user-123',
-        name: 'Mock Owner',
-        email: 'owner@example.com',
-      },
-    };
-    
+    // For any other method/path combination, return empty response
+    console.log(`[MOCK] ⚠️ Unhandled listings request: ${method} ${urlPath}`);
     await route.fulfill({
-      status: 200,
+      status: 404,
       contentType: 'application/json',
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
       body: JSON.stringify({
-        data: mockListing,
-      }),
-    });
-  });
-
-  // Mock: Create Listing (POST /api/listings)
-  await page.route((url) => {
-    // Handle both string and URL object
-    let urlPath: string;
-    if (typeof url === 'string') {
-      urlPath = url.includes('?') ? url.split('?')[0] : url;
-    } else {
-      // URL object
-      urlPath = url.pathname;
-    }
-    
-    // Match POST /api/listings (exact match, no path after /listings)
-    const isCreateRequest = urlPath === '/api/listings' || urlPath.endsWith('/api/listings');
-    
-    if (isCreateRequest) {
-      const urlStr = typeof url === 'string' ? url : url.toString();
-      console.log(`[MOCK] 🔵 Route matcher matched POST create: ${urlStr}`);
-    }
-    return isCreateRequest;
-  }, async (route: Route) => {
-    const url = route.request().url();
-    const method = route.request().method();
-    
-    if (method !== 'POST') {
-      await route.continue();
-      return;
-    }
-    
-    console.log(`[MOCK] ✅ Handling POST /api/listings`);
-    
-    const request = route.request();
-    const postData = request.postDataJSON();
-    
-    const mockListing = {
-      id: `mock-listing-${Date.now()}`,
-      ...postData,
-      userId: 'mock-user-123',
-      available: true,
-      images: postData.images || [],
-      tags: postData.tags || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    await route.fulfill({
-      status: 201,
-      contentType: 'application/json',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-      body: JSON.stringify({
-        data: mockListing,
+        error: 'Not found',
       }),
     });
   });
@@ -433,9 +394,7 @@ export async function setupApiMocks(page: Page) {
   console.log('[MOCK]   - **/api/health**');
   console.log('[MOCK]   - **/api/auth/register**');
   console.log('[MOCK]   - **/api/auth/login**');
-  console.log('[MOCK]   - GET /api/listings (list)');
-  console.log('[MOCK]   - GET /api/listings/{id} (detail)');
-  console.log('[MOCK]   - POST /api/listings (create)');
+  console.log('[MOCK]   - **/api/listings** (GET list, GET detail, POST create)');
   console.log('[MOCK]   - **/api/users/**');
   console.log('[MOCK]   - **/api/conversations**');
 }

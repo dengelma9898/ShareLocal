@@ -151,8 +151,12 @@ test.describe('Listings (Mocked)', () => {
     // Wait for page to load
     await page.waitForLoadState('networkidle', { timeout: 10000 });
     
-    // Should show listing details
-    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 5000 });
+    // Wait a bit for React to render
+    await page.waitForTimeout(500);
+    
+    // Should show listing details - check for the listing title text
+    // The mock returns "Mock Listing Detail" as the title
+    await expect(page.locator('text=Mock Listing Detail')).toBeVisible({ timeout: 10000 });
   });
 
   test('should require authentication to create listing (mocked)', async ({ page }) => {
