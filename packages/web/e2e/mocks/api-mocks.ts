@@ -127,90 +127,9 @@ export async function setupApiMocks(page: Page) {
     });
   });
 
-  // Mock: Get Listing by ID (must be BEFORE the list route to match first)
-  // Match pattern: /api/listings/{uuid} (exact UUID pattern)
-  // Very generic: matches ANY URL containing /api/listings/ followed by UUID
-  await page.route('**/api/listings/**', async (route: Route) => {
-    const url = route.request().url();
-    const method = route.request().method();
-    
-    // Parse URL to check if it's a detail request (has UUID)
-    let urlPath: string;
-    try {
-      const urlObj = new URL(url);
-      urlPath = urlObj.pathname;
-    } catch {
-      urlPath = url.split('?')[0];
-    }
-    
-    // Check if this is a detail request (has UUID) or list request
-    const isDetailRequest = urlPath.match(/\/api\/listings\/[a-f0-9-]{36}(\?|$)/i);
-    const isListRequest = urlPath === '/api/listings' || urlPath.match(/\/api\/listings\?/);
-    const isMyListings = urlPath.includes('/api/listings/my');
-    
-    // If it's a list request or my listings, let the list route handle it
-    if (isListRequest || isMyListings) {
-      if (process.env.CI) {
-        console.log(`[MOCK] Skipping detail route (list/my): ${urlPath}`);
-      }
-      await route.continue();
-      return;
-    }
-    
-    // Only handle GET requests for listing detail
-    if (method !== 'GET' || !isDetailRequest) {
-      if (process.env.CI) {
-        console.log(`[MOCK] Skipping detail route (not GET or not detail): ${method} ${urlPath}`);
-      }
-      await route.continue();
-      return;
-    }
-    
-    const listingId = urlPath.match(/\/api\/listings\/([a-f0-9-]{36})/i)?.[1] || 'mock-listing-1';
-    
-    if (process.env.CI) {
-      console.log(`[MOCK] Listing detail: ${url} (ID: ${listingId})`);
-    }
-    
-    const mockListing = {
-      id: listingId,
-      title: 'Mock Listing Detail',
-      description: 'Detailed description of mock listing',
-      category: 'TOOL',
-      type: 'OFFER',
-      userId: 'mock-user-123',
-      location: 'Nürnberg',
-      pricePerDay: 10.0,
-      currency: 'EUR',
-      available: true,
-      images: [],
-      tags: ['test', 'mock'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        data: {
-          ...mockListing,
-          owner: {
-            id: 'mock-user-123',
-            name: 'Mock Owner',
-            email: 'owner@example.com',
-          },
-        },
-      }),
-    });
-  });
-
   // Mock: Get Listings (handle both GET requests and query parameters)
   // Match both /api/listings and /api/listings?query=params
-  // IMPORTANT: This route must be registered AFTER the detail route
+  // IMPORTANT: This route must be registered FIRST (before detail route)
   // Match ANY URL containing /api/listings (including full URLs with localhost:3001)
   await page.route('**/api/listings**', async (route: Route) => {
     const url = route.request().url();
