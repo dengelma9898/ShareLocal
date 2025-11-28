@@ -24,39 +24,9 @@ export interface MockResponse {
 export async function setupApiMocks(page: Page) {
   // Warte bis die Seite bereit ist, bevor Routes gesetzt werden
   // Dies stellt sicher, dass Routes vor allen Requests registriert sind
-  
-  // Log für Debugging
-  console.log('[MOCK] Setting up API mocks...');
-  
-  // Log all requests for debugging (always log)
-  // IMPORTANT: These listeners must be set up BEFORE routes are registered
-  // to catch ALL requests, including those that don't match routes
-  page.on('request', (request) => {
-    if (request.url().includes('/api/')) {
-      console.log(`[MOCK] 📤 Request event: ${request.method()} ${request.url()}`);
-    }
-  });
-  
-  page.on('response', (response) => {
-    if (response.url().includes('/api/')) {
-      console.log(`[MOCK] 📥 Response event: ${response.status()} ${response.url()}`);
-    }
-  });
-  
-  // Also log ALL requests (not just /api/) to see if requests are being made
-  page.on('requestfailed', (request) => {
-    if (request.url().includes('/api/')) {
-      console.log(`[MOCK] ❌ Request failed: ${request.method()} ${request.url()} - ${request.failure()?.errorText}`);
-    }
-  });
 
   // Mock: Health Check
-  // Very generic pattern: matches ANY URL containing /api/health
   await page.route('**/api/health**', async (route: Route) => {
-    const url = route.request().url();
-    if (process.env.CI) {
-      console.log(`[MOCK] Health check: ${url}`);
-    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -152,7 +122,6 @@ export async function setupApiMocks(page: Page) {
     
     // Skip /api/listings/my (user's own listings)
     if (urlPath.includes('/api/listings/my')) {
-      console.log(`[MOCK] Skipping /api/listings/my: ${url}`);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -171,7 +140,6 @@ export async function setupApiMocks(page: Page) {
     const detailMatch = urlPath.match(/\/api\/listings\/([a-f0-9-]{36})/i);
     if (detailMatch && method === 'GET') {
       const listingId = detailMatch[1];
-      console.log(`[MOCK] ✅ Handling GET /api/listings/${listingId}`);
       
       // Use the requested ID or fallback to a valid UUID
       const validId = listingId.match(/^[a-f0-9-]{36}$/i) ? listingId : '123e4567-e89b-12d3-a456-426614174001';
@@ -215,8 +183,6 @@ export async function setupApiMocks(page: Page) {
     
     // Handle GET /api/listings - List page
     if (method === 'GET' && urlPath === '/api/listings') {
-      console.log(`[MOCK] ✅ Handling GET /api/listings`);
-      
       const mockListings = [
         {
           id: '123e4567-e89b-12d3-a456-426614174001',
@@ -275,8 +241,6 @@ export async function setupApiMocks(page: Page) {
     
     // Handle POST /api/listings - Create listing
     if (method === 'POST' && urlPath === '/api/listings') {
-      console.log(`[MOCK] ✅ Handling POST /api/listings`);
-      
       const request = route.request();
       const postData = request.postDataJSON();
       
@@ -307,7 +271,6 @@ export async function setupApiMocks(page: Page) {
     }
     
     // For any other method/path combination, return empty response
-    console.log(`[MOCK] ⚠️ Unhandled listings request: ${method} ${urlPath}`);
     await route.fulfill({
       status: 404,
       contentType: 'application/json',
@@ -388,15 +351,6 @@ export async function setupApiMocks(page: Page) {
       await route.continue();
     }
   });
-  
-  console.log('[MOCK] ✅ All API mocks set up');
-  console.log('[MOCK] Registered routes:');
-  console.log('[MOCK]   - **/api/health**');
-  console.log('[MOCK]   - **/api/auth/register**');
-  console.log('[MOCK]   - **/api/auth/login**');
-  console.log('[MOCK]   - **/api/listings** (GET list, GET detail, POST create)');
-  console.log('[MOCK]   - **/api/users/**');
-  console.log('[MOCK]   - **/api/conversations**');
 }
 
 /**
