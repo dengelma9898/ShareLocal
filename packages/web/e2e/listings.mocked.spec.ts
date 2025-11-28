@@ -6,7 +6,13 @@ import { setupApiMocks } from './mocks/api-mocks';
 
 test.describe('Listings (Mocked)', () => {
   test.beforeEach(async ({ page }) => {
-    // Mocks werden bereits durch fixtures.ts gesetzt, aber sicherstellen dass sie aktiv sind
+    // Mocks werden bereits durch fixtures.ts gesetzt (via useMocks: true)
+    // Aber sicherstellen dass sie aktiv sind, bevor wir navigieren
+    // Die Mocks sind komplett in Playwright implementiert (nicht vom Backend)
+    
+    // Warte kurz, um sicherzustellen, dass Routes registriert sind
+    await page.waitForTimeout(200);
+    
     await page.goto('/');
   });
 

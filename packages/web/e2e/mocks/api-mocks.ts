@@ -95,27 +95,41 @@ export async function setupApiMocks(page: Page) {
   // Mock: Get Listings (handle both GET requests and query parameters)
   // Match both /api/listings and /api/listings?query=params
   // IMPORTANT: This route must be registered BEFORE the detail route
+  // Match ANY URL containing /api/listings (including full URLs with localhost:3001)
   await page.route('**/api/listings**', async (route: Route) => {
     const url = route.request().url();
     const method = route.request().method();
     
+    // Parse URL to check path
+    let urlPath: string;
+    try {
+      const urlObj = new URL(url);
+      urlPath = urlObj.pathname;
+    } catch {
+      // Fallback: extract path from URL string
+      urlPath = url.split('?')[0]; // Remove query params
+    }
+    
     // Skip if this is a specific listing detail request (has UUID after /listings/)
     // Pattern: /api/listings/{uuid} but not /api/listings?query or /api/listings/my
     // Also skip /api/listings/my (user's own listings)
-    if (url.match(/\/api\/listings\/[a-f0-9-]{36}(\?|$)/i) || url.includes('/api/listings/my')) {
-      route.continue();
+    const isDetailRequest = urlPath.match(/\/api\/listings\/[a-f0-9-]{36}(\?|$)/i);
+    const isMyListings = urlPath.includes('/api/listings/my') || url.includes('/api/listings/my');
+    
+    if (isDetailRequest || isMyListings) {
+      await route.continue();
       return;
     }
     
     // Only handle GET requests for listings list
     if (method !== 'GET') {
-      route.continue();
+      await route.continue();
       return;
     }
     
     // Log for debugging (only in test mode)
     if (process.env.CI) {
-      console.log(`[MOCK] Intercepting GET request to: ${url}`);
+      console.log(`[MOCK] Intercepting GET request to: ${url} (path: ${urlPath})`);
     }
     
     const mockListings = [
