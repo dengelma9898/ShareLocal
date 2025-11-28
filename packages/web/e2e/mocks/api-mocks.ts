@@ -28,20 +28,18 @@ export async function setupApiMocks(page: Page) {
   // Log für Debugging
   console.log('[MOCK] Setting up API mocks...');
   
-  // Log all requests for debugging (especially in CI)
-  if (process.env.CI) {
-    page.on('request', (request) => {
-      if (request.url().includes('/api/')) {
-        console.log(`[MOCK] Request intercepted: ${request.method()} ${request.url()}`);
-      }
-    });
-    
-    page.on('response', (response) => {
-      if (response.url().includes('/api/')) {
-        console.log(`[MOCK] Response: ${response.status()} ${response.url()}`);
-      }
-    });
-  }
+  // Log all requests for debugging (always log)
+  page.on('request', (request) => {
+    if (request.url().includes('/api/')) {
+      console.log(`[MOCK] Request event: ${request.method()} ${request.url()}`);
+    }
+  });
+  
+  page.on('response', (response) => {
+    if (response.url().includes('/api/')) {
+      console.log(`[MOCK] Response event: ${response.status()} ${response.url()}`);
+    }
+  });
 
   // Mock: Health Check
   // Very generic pattern: matches ANY URL containing /api/health
@@ -149,11 +147,9 @@ export async function setupApiMocks(page: Page) {
       urlHost = '';
     }
     
-    // Log ALL requests for debugging
-    if (process.env.CI) {
-      console.log(`[MOCK] Route intercepted: ${method} ${url}`);
-      console.log(`[MOCK] Path: ${urlPath}, Host: ${urlHost}`);
-    }
+    // Log ALL requests for debugging (always log in CI)
+    console.log(`[MOCK] Route intercepted: ${method} ${url}`);
+    console.log(`[MOCK] Path: ${urlPath}, Host: ${urlHost}`);
     
     // Skip if this is a specific listing detail request (has UUID after /listings/)
     // Pattern: /api/listings/{uuid} but not /api/listings?query or /api/listings/my
@@ -162,26 +158,20 @@ export async function setupApiMocks(page: Page) {
     const isMyListings = urlPath.includes('/api/listings/my') || url.includes('/api/listings/my');
     
     if (isDetailRequest || isMyListings) {
-      if (process.env.CI) {
-        console.log(`[MOCK] Skipping (detail/my): ${urlPath}`);
-      }
+      console.log(`[MOCK] Skipping (detail/my): ${urlPath}`);
       await route.continue();
       return;
     }
     
     // Only handle GET requests for listings list
     if (method !== 'GET') {
-      if (process.env.CI) {
-        console.log(`[MOCK] Skipping (not GET): ${method}`);
-      }
+      console.log(`[MOCK] Skipping (not GET): ${method}`);
       await route.continue();
       return;
     }
     
-    // Log for debugging (only in test mode)
-    if (process.env.CI) {
-      console.log(`[MOCK] ✅ Intercepting GET request to: ${url} (path: ${urlPath})`);
-    }
+    // Log for debugging
+    console.log(`[MOCK] ✅ Intercepting GET request to: ${url} (path: ${urlPath})`);
     
     const mockListings = [
       {
@@ -218,12 +208,10 @@ export async function setupApiMocks(page: Page) {
       },
     ];
     
-    // Log for debugging
-    if (process.env.CI) {
-      console.log(`[MOCK] Fulfilling GET /api/listings with ${mockListings.length} listings`);
-      console.log(`[MOCK] Request URL: ${url}`);
-      console.log(`[MOCK] Request Method: ${method}`);
-    }
+    // Log for debugging (always log)
+    console.log(`[MOCK] Fulfilling GET /api/listings with ${mockListings.length} listings`);
+    console.log(`[MOCK] Request URL: ${url}`);
+    console.log(`[MOCK] Request Method: ${method}`);
     
     const responseBody = {
       data: mockListings,
@@ -235,20 +223,24 @@ export async function setupApiMocks(page: Page) {
       },
     };
     
-    if (process.env.CI) {
-      console.log(`[MOCK] Response body:`, JSON.stringify(responseBody, null, 2));
-    }
+    console.log(`[MOCK] Response body:`, JSON.stringify(responseBody, null, 2));
     
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-      body: JSON.stringify(responseBody),
-    });
+    try {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+        body: JSON.stringify(responseBody),
+      });
+      console.log(`[MOCK] ✅ Successfully fulfilled request for ${url}`);
+    } catch (error) {
+      console.error(`[MOCK] ❌ Error fulfilling request for ${url}:`, error);
+      throw error;
+    }
   });
 
   // Mock: Create Listing (POST to /api/listings)
