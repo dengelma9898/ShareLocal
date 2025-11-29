@@ -50,6 +50,9 @@ ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
 # Build Next.js application
 RUN pnpm --filter @sharelocal/web build
 
+# Verify standalone output exists
+RUN test -d /app/packages/web/.next/standalone || (echo "Error: .next/standalone not found after build" && exit 1)
+
 # Stage 3: Production
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -64,9 +67,11 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy built application
+# Next.js standalone output includes everything needed to run the app
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
+# package.json is already included in standalone, but we copy it explicitly for reference
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/package.json ./packages/web/package.json
 
 # Set user
