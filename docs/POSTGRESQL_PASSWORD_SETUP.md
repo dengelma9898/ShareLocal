@@ -302,28 +302,3 @@ openssl rand -base64 32
 3. ✅ GitHub Secrets mit Password konfiguriert
 4. ⏳ Deployment testen
 5. ⏳ Database Connection prüfen
-
-
-
-
-
-docker run -d \
-  --name sharelocal-postgres \
-  --network sharelocal-network \
-  --restart unless-stopped \
-  -e POSTGRES_USER=sharelocal \
-  -e POSTGRES_PASSWORD=gPrsCR2jxzxeHEe \
-  -e POSTGRES_DB=sharelocal \
-  -v sharelocal-postgres-data:/var/lib/postgresql/data \
-  postgres:17-alpine
-
-
-docker run -d \
-  --name sharelocal-postgres \
-  --network sharelocal-network \
-  --restart unless-stopped \
-  -e POSTGRES_USER=sharelocal \
-  -e POSTGRES_PASSWORD=feksa9faxcubmedvIt \
-  -e POSTGRES_DB=sharelocal \
-  -v sharelocal-postgres-data:/var/lib/postgresql/data \
-  postgres:17-alpine
