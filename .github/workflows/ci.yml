@@ -222,6 +222,8 @@ jobs:
             ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api') || '' }}
             ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev') || '' }}
           platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
@@ -331,6 +333,8 @@ jobs:
             ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api') || '' }}
             ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd') || '' }}
           platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
