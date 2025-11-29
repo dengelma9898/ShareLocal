@@ -35,7 +35,8 @@ COPY packages/database ./packages/database
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 
 # Generate Prisma Client (needed for shared types)
-RUN pnpm --filter @sharelocal/database db:generate
+# DATABASE_URL is required for Prisma generate (can be dummy value)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter @sharelocal/database db:generate
 
 # Build shared package
 RUN pnpm --filter @sharelocal/shared build
