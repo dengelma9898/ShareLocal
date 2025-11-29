@@ -196,11 +196,9 @@ jobs:
           - service: api
             dockerfile: packages/api/Dockerfile
             context: .
-            image_name: ${{ env.IMAGE_NAME_API_DEV }}
           - service: web
             dockerfile: packages/web/Dockerfile
             context: .
-            image_name: ${{ env.IMAGE_NAME_WEB_DEV }}
 
     steps:
       - name: Checkout repository
@@ -260,11 +258,9 @@ jobs:
           - service: api
             dockerfile: packages/api/Dockerfile
             context: .
-            image_name: ${{ env.IMAGE_NAME_API_PRD }}
           - service: web
             dockerfile: packages/web/Dockerfile
             context: .
-            image_name: ${{ env.IMAGE_NAME_WEB_PRD }}
 
     steps:
       - name: Checkout repository
@@ -327,7 +323,7 @@ jobs:
             docker rm sharelocal-api-dev || true
             
             # Pull und starte neuen Container
-            docker pull ${{ env.IMAGE_NAME_API_DEV }}:latest
+            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api-dev:latest
             docker run -d \
               --name sharelocal-api-dev \
               -p 3001:3001 \
@@ -339,7 +335,7 @@ jobs:
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
               -e LOG_LEVEL=debug \
-              ${{ env.IMAGE_NAME_API_DEV }}:latest
+              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api-dev:latest
 
       - name: Deploy Web to server
         uses: appleboy/ssh-action@v1.0.3
@@ -353,7 +349,7 @@ jobs:
             docker rm sharelocal-web-dev || true
             
             # Pull und starte neuen Container
-            docker pull ${{ env.IMAGE_NAME_WEB_DEV }}:latest
+            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web-dev:latest
             docker run -d \
               --name sharelocal-web-dev \
               -p 3000:3000 \
@@ -363,7 +359,7 @@ jobs:
               -e PORT=3000 \
               -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
               -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
-              ${{ env.IMAGE_NAME_WEB_DEV }}:latest
+              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web-dev:latest
 
   # Deploy Prd (nur für main Branch, mit Bestätigung)
   deploy-prd:
@@ -384,7 +380,7 @@ jobs:
             docker rm sharelocal-api || true
             
             # Pull und starte neuen Container
-            docker pull ${{ env.IMAGE_NAME_API_PRD }}:latest
+            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api:latest
             docker run -d \
               --name sharelocal-api \
               -p 3001:3001 \
@@ -396,7 +392,7 @@ jobs:
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
               -e LOG_LEVEL=info \
-              ${{ env.IMAGE_NAME_API_PRD }}:latest
+              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api:latest
 
       - name: Deploy Web to server
         uses: appleboy/ssh-action@v1.0.3
@@ -410,7 +406,7 @@ jobs:
             docker rm sharelocal-web || true
             
             # Pull und starte neuen Container
-            docker pull ${{ env.IMAGE_NAME_WEB_PRD }}:latest
+            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web:latest
             docker run -d \
               --name sharelocal-web \
               -p 3000:3000 \
@@ -420,7 +416,7 @@ jobs:
               -e PORT=3000 \
               -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
               -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
-              ${{ env.IMAGE_NAME_WEB_PRD }}:latest
+              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web:latest
 
   # All Jobs Summary
   summary:
