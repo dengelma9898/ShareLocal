@@ -154,8 +154,8 @@ jobs:
         if: matrix.service == 'web'
         id: build-args-web
         run: |
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV }}" >> $GITHUB_OUTPUT
-          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV }}" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -196,7 +196,7 @@ jobs:
               --network sharelocal-network \
               -e NODE_ENV=development \
               -e PORT=3001 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}" \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
               -e LOG_LEVEL=debug \
@@ -222,8 +222,8 @@ jobs:
               --network sharelocal-network \
               -e NODE_ENV=development \
               -e PORT=3000 \
-              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV }}" \
-              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV }}" \
+              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
+              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
               ${{ env.IMAGE_NAME_WEB_DEV }}:latest
 
   build-and-push-prd:
@@ -274,8 +274,8 @@ jobs:
         if: matrix.service == 'web'
         id: build-args-web
         run: |
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD }}" >> $GITHUB_OUTPUT
-          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD }}" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -316,7 +316,7 @@ jobs:
               --network sharelocal-network \
               -e NODE_ENV=production \
               -e PORT=3001 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL_PRD }}" \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
               -e LOG_LEVEL=info \
@@ -342,6 +342,6 @@ jobs:
               --network sharelocal-network \
               -e NODE_ENV=production \
               -e PORT=3000 \
-              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD }}" \
-              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD }}" \
+              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
+              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
               ${{ env.IMAGE_NAME_WEB_PRD }}:latest
