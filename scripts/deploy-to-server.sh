@@ -88,10 +88,18 @@ echo ""
 echo "✅ Deployment abgeschlossen!"
 echo ""
 echo "📋 Nächste Schritte:"
-echo "1. Prüfe Logs: docker compose logs -f"
-echo "2. Prüfe Container Status: docker compose ps"
-echo "3. Teste API: curl http://localhost:3001/health"
-echo "4. Konfiguriere Nginx (siehe docs/IONOS_DEPLOYMENT.md)"
+if [ "$ENVIRONMENT" = "prd" ]; then
+    echo "1. Prüfe Logs: docker compose -f docker-compose.yml -f docker-compose.prd.yml logs -f"
+    echo "2. Prüfe Container Status: docker compose -f docker-compose.yml -f docker-compose.prd.yml ps"
+    echo "3. Teste API: curl http://localhost:3001/health"
+    echo "4. Konfiguriere Nginx (siehe docs/IONOS_DEPLOYMENT.md)"
+else
+    echo "1. Prüfe Logs: docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f"
+    echo "2. Prüfe Container Status: docker compose -f docker-compose.yml -f docker-compose.dev.yml ps"
+    echo "3. Teste API: curl http://localhost:3001/health"
+    echo "4. Konfiguriere Nginx (siehe docs/DEV_ENVIRONMENT_SETUP.md)"
+    echo "5. Code-Änderungen werden automatisch neu geladen (Hot Reload)"
+fi
 echo ""
 echo "🌐 URLs:"
 if [ "$ENVIRONMENT" = "prd" ]; then
