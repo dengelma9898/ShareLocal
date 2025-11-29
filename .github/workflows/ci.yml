@@ -229,6 +229,8 @@ jobs:
           host: ${{ env.SERVER_HOST }}
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          timeout: 30s
           script: |
             set -e
             CONTAINER_NAME="sharelocal-${{ matrix.service }}-dev"
@@ -333,6 +335,8 @@ jobs:
           host: ${{ env.SERVER_HOST }}
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          timeout: 30s
           script: |
             set -e
             CONTAINER_NAME="sharelocal-${{ matrix.service }}"
