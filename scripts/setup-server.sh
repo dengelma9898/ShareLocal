@@ -29,9 +29,40 @@ fi
 echo ""
 echo "2️⃣ Prüfe Docker Compose Installation..."
 if ! docker compose version &> /dev/null; then
-    echo "📦 Installiere Docker Compose..."
-    apt-get update
-    apt-get install -y docker-compose-plugin
+    echo "📦 Installiere Docker Compose v2..."
+    
+    # Installiere Docker Compose v2 als Standalone Binary
+    # Dies funktioniert immer, auch wenn das Plugin-Paket nicht verfügbar ist
+    DOCKER_COMPOSE_VERSION="v2.24.5"
+    
+    # Bestimme Architektur
+    ARCH=$(uname -m)
+    case $ARCH in
+        x86_64) COMPOSE_ARCH="x86_64" ;;
+        aarch64|arm64) COMPOSE_ARCH="aarch64" ;;
+        *) COMPOSE_ARCH="x86_64" ;; # Fallback
+    esac
+    
+    echo "   Architektur: $COMPOSE_ARCH"
+    echo "   Version: $DOCKER_COMPOSE_VERSION"
+    
+    # Erstelle Verzeichnis für CLI Plugins
+    mkdir -p /usr/local/lib/docker/cli-plugins
+    
+    # Lade Docker Compose Binary
+    curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${COMPOSE_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-compose
+    
+    # Mache ausführbar
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    
+    # Prüfe Installation
+    if docker compose version &> /dev/null; then
+        echo "✅ Docker Compose installiert: $(docker compose version)"
+    else
+        echo "❌ Docker Compose Installation fehlgeschlagen!"
+        echo "💡 Versuche manuell: https://docs.docker.com/compose/install/"
+        exit 1
+    fi
 else
     echo "✅ Docker Compose ist bereits installiert: $(docker compose version)"
 fi
