@@ -61,7 +61,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/packages/database/prisma ./prisma
-COPY --from=builder --chown=nodejs:nodejs /app/packages/database/node_modules/.prisma ./node_modules/.prisma
+# Prisma Client is generated in root node_modules/.prisma in pnpm workspaces
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 # Set user
 USER nodejs
