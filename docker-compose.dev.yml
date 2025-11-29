@@ -1,0 +1,35 @@
+# Docker Compose für Development Environment
+# Verwendung: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  api:
+    build:
+      target: builder
+    command: pnpm --filter @sharelocal/api dev
+    volumes:
+      - ./packages/api:/app/packages/api
+      - ./packages/shared:/app/packages/shared
+      - ./packages/database:/app/packages/database
+      - /app/node_modules
+      - /app/packages/api/node_modules
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+
+  web:
+    build:
+      target: builder
+    command: pnpm --filter @sharelocal/web dev
+    volumes:
+      - ./packages/web:/app/packages/web
+      - ./packages/shared:/app/packages/shared
+      - /app/node_modules
+      - /app/packages/web/node_modules
+      - /app/packages/web/.next
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_BASE_PATH: /share-local/dev
+
