@@ -236,9 +236,12 @@ jobs:
             CONTAINER_NAME="sharelocal-${{ matrix.service }}-dev"
             IMAGE_NAME="${{ matrix.image_name }}:latest"
             
-            # Stop and remove existing container (ignore errors if container doesn't exist)
+            # Force stop and remove existing container
             docker stop $CONTAINER_NAME 2>/dev/null || true
-            docker rm $CONTAINER_NAME 2>/dev/null || true
+            docker rm -f $CONTAINER_NAME 2>/dev/null || true
+            
+            # Wait a moment to ensure container is fully removed
+            sleep 1
             
             # Pull latest image
             docker pull $IMAGE_NAME
@@ -285,7 +288,7 @@ jobs:
   # ============================================
   
   deploy-prd:
-    needs: [test-api, test-web]
+    needs: [deploy-dev]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: prd
     runs-on: ubuntu-latest
@@ -342,9 +345,12 @@ jobs:
             CONTAINER_NAME="sharelocal-${{ matrix.service }}"
             IMAGE_NAME="${{ matrix.image_name }}:latest"
             
-            # Stop and remove existing container (ignore errors if container doesn't exist)
+            # Force stop and remove existing container
             docker stop $CONTAINER_NAME 2>/dev/null || true
-            docker rm $CONTAINER_NAME 2>/dev/null || true
+            docker rm -f $CONTAINER_NAME 2>/dev/null || true
+            
+            # Wait a moment to ensure container is fully removed
+            sleep 1
             
             # Pull latest image
             docker pull $IMAGE_NAME
