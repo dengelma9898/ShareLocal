@@ -193,10 +193,10 @@ jobs:
         include:
           - service: api
             dockerfile: packages/api/Dockerfile
-            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api-dev
+            image_name: dengelma9898/sharelocal-api-dev
           - service: web
             dockerfile: packages/web/Dockerfile
-            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web-dev
+            image_name: dengelma9898/sharelocal-web-dev
 
     steps:
       - name: Checkout repository
@@ -282,10 +282,10 @@ jobs:
         include:
           - service: api
             dockerfile: packages/api/Dockerfile
-            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api
+            image_name: dengelma9898/sharelocal-api
           - service: web
             dockerfile: packages/web/Dockerfile
-            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web
+            image_name: dengelma9898/sharelocal-web
 
     steps:
       - name: Checkout repository
