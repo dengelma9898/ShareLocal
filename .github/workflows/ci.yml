@@ -7,13 +7,15 @@ on:
     branches: ['**']
 
 env:
-  REGISTRY: docker.io
   DOCKERHUB_USERNAME: dengelma9898
   SERVER_HOST: 87.106.208.51
   SERVER_USER: root
 
 jobs:
-  # Lint Job
+  # ============================================
+  # CI: Lint, Build, Test (für alle Branches)
+  # ============================================
+  
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -39,10 +41,9 @@ jobs:
       - name: Run linter (Web)
         run: |
           cd packages/web
-          pnpm lint || echo "⚠️ Web linting skipped (known issue with next lint in monorepo)"
+          pnpm lint || echo "⚠️ Web linting skipped"
           exit 0
 
-  # Build Job
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -66,7 +67,7 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @sharelocal/database db:generate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://test:test@localhost:5432/test' }}
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
 
       - name: Build Shared Package
         run: pnpm --filter @sharelocal/shared build
@@ -74,14 +75,13 @@ jobs:
       - name: Build API
         run: pnpm --filter @sharelocal/api build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://test:test@localhost:5432/test' }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-jwt-secret-key-min-32-chars-long-for-testing' }}
-          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || 'test-encryption-key-min-32-chars-long-for-testing' }}
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: test-jwt-secret-key-min-32-chars-long-for-testing
+          ENCRYPTION_KEY: test-encryption-key-min-32-chars-long-for-testing
 
       - name: Build Web
         run: pnpm --filter @sharelocal/web build
 
-  # Test Job (API)
   test-api:
     name: Test API
     runs-on: ubuntu-latest
@@ -122,7 +122,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
 
-      - name: Push database schema (for tests)
+      - name: Push database schema
         run: pnpm --filter @sharelocal/database db:push --skip-generate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
@@ -136,7 +136,6 @@ jobs:
           JWT_SECRET: test-jwt-secret-key-min-32-chars-long-for-testing
           ENCRYPTION_KEY: test-encryption-key-min-32-chars-long-for-testing
 
-  # Test Job (Web)
   test-web:
     name: Test Web
     runs-on: ubuntu-latest
@@ -160,13 +159,13 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm --filter @sharelocal/web exec playwright install --with-deps chromium
 
-      - name: Run Web E2E tests (mocked)
+      - name: Run Web E2E tests
         run: pnpm --filter @sharelocal/web test:e2e:mocked
         env:
           NODE_ENV: test
 
       - name: Upload Playwright test results
-        if: always() # Upload even if tests fail
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -175,194 +174,14 @@ jobs:
             packages/web/playwright-report/
           retention-days: 30
 
-  # Docker Build & Push (nur für main Branch)
-  build-and-push-dev:
-    needs: [test-api, test-web]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    environment: dev
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    strategy:
-      matrix:
-        service: [api, web]
-        include:
-          - service: api
-            dockerfile: packages/api/Dockerfile
-            context: .
-          - service: web
-            dockerfile: packages/web/Dockerfile
-            context: .
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-${{ matrix.service }}-dev
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
-
-      - name: Set build args for Web
-        if: matrix.service == 'web'
-        id: build-args-web
-        run: |
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" >> $GITHUB_OUTPUT
-          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', steps.build-args-web.outputs.NEXT_PUBLIC_API_URL) || '' }}
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', steps.build-args-web.outputs.NEXT_PUBLIC_BASE_PATH) || '' }}
-          platforms: linux/amd64
-
-  build-and-push-prd:
-    needs: [test-api, test-web]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    environment: prd
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    strategy:
-      matrix:
-        service: [api, web]
-        include:
-          - service: api
-            dockerfile: packages/api/Dockerfile
-            context: .
-          - service: web
-            dockerfile: packages/web/Dockerfile
-            context: .
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-${{ matrix.service }}
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
-
-      - name: Set build args for Web
-        if: matrix.service == 'web'
-        id: build-args-web
-        run: |
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" >> $GITHUB_OUTPUT
-          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', steps.build-args-web.outputs.NEXT_PUBLIC_API_URL) || '' }}
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', steps.build-args-web.outputs.NEXT_PUBLIC_BASE_PATH) || '' }}
-          platforms: linux/amd64
-
-  # Deploy Dev (nur für main Branch)
+  # ============================================
+  # Deployment: Dev (automatisch für main)
+  # ============================================
+  
   deploy-dev:
-    needs: build-and-push-dev
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    environment: dev
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy API to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.SERVER_HOST }}
-          username: ${{ env.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Stoppe und entferne alten Container
-            docker stop sharelocal-api-dev || true
-            docker rm sharelocal-api-dev || true
-            
-            # Pull und starte neuen Container
-            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api-dev:latest
-            docker run -d \
-              --name sharelocal-api-dev \
-              -p 3001:3001 \
-              --restart unless-stopped \
-              --network sharelocal-network \
-              -e NODE_ENV=development \
-              -e PORT=3001 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
-              -e LOG_LEVEL=debug \
-              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api-dev:latest
-
-      - name: Deploy Web to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.SERVER_HOST }}
-          username: ${{ env.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Stoppe und entferne alten Container
-            docker stop sharelocal-web-dev || true
-            docker rm sharelocal-web-dev || true
-            
-            # Pull und starte neuen Container
-            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web-dev:latest
-            docker run -d \
-              --name sharelocal-web-dev \
-              -p 3000:3000 \
-              --restart unless-stopped \
-              --network sharelocal-network \
-              -e NODE_ENV=development \
-              -e PORT=3000 \
-              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
-              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
-              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web-dev:latest
-
-  # Build & Deploy Prd (nur für main Branch, mit Bestätigung)
-  # Production Build läuft erst nach Bestätigung im GitHub Environment
-  build-and-push-prd:
     needs: [test-api, test-web]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    environment: prd
+    environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -374,10 +193,10 @@ jobs:
         include:
           - service: api
             dockerfile: packages/api/Dockerfile
-            context: .
+            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api-dev
           - service: web
             dockerfile: packages/web/Dockerfile
-            context: .
+            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web-dev
 
     steps:
       - name: Checkout repository
@@ -392,113 +211,143 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
         with:
-          images: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-${{ matrix.service }}
-          tags: |
-            type=raw,value=latest
-            type=sha,format=short
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ matrix.image_name }}:latest
+          build-args: |
+            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api') || '' }}
+            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev') || '' }}
+          platforms: linux/amd64
 
-      - name: Set build args for Web
-        if: matrix.service == 'web'
-        id: build-args-web
-        run: |
-          echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" >> $GITHUB_OUTPUT
-          echo "NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" >> $GITHUB_OUTPUT
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            CONTAINER_NAME="sharelocal-${{ matrix.service }}-dev"
+            IMAGE_NAME="${{ matrix.image_name }}:latest"
+            
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+            docker pull $IMAGE_NAME
+            
+            if [ "${{ matrix.service }}" == "api" ]; then
+              docker run -d \
+                --name $CONTAINER_NAME \
+                -p 3001:3001 \
+                --restart unless-stopped \
+                --network sharelocal-network \
+                -e NODE_ENV=development \
+                -e PORT=3001 \
+                -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+                -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+                -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+                -e LOG_LEVEL=debug \
+                $IMAGE_NAME
+            else
+              docker run -d \
+                --name $CONTAINER_NAME \
+                -p 3000:3000 \
+                --restart unless-stopped \
+                --network sharelocal-network \
+                -e NODE_ENV=development \
+                -e PORT=3000 \
+                -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
+                -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
+                $IMAGE_NAME
+            fi
+
+  # ============================================
+  # Deployment: Production (nur nach Bestätigung)
+  # ============================================
+  
+  deploy-prd:
+    needs: [test-api, test-web]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: prd
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [api, web]
+        include:
+          - service: api
+            dockerfile: packages/api/Dockerfile
+            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api
+          - service: web
+            dockerfile: packages/web/Dockerfile
+            image_name: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ matrix.context }}
+          context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ matrix.image_name }}:latest
           build-args: |
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', steps.build-args-web.outputs.NEXT_PUBLIC_API_URL) || '' }}
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', steps.build-args-web.outputs.NEXT_PUBLIC_BASE_PATH) || '' }}
+            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api') || '' }}
+            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd') || '' }}
           platforms: linux/amd64
 
-  # Deploy Prd (nur für main Branch, mit Bestätigung)
-  deploy-prd:
-    needs: build-and-push-prd
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    environment: prd
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy API to server
+      - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.SERVER_HOST }}
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Stoppe und entferne alten Container
-            docker stop sharelocal-api || true
-            docker rm sharelocal-api || true
+            CONTAINER_NAME="sharelocal-${{ matrix.service }}"
+            IMAGE_NAME="${{ matrix.image_name }}:latest"
             
-            # Pull und starte neuen Container
-            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api:latest
-            docker run -d \
-              --name sharelocal-api \
-              -p 3001:3001 \
-              --restart unless-stopped \
-              --network sharelocal-network \
-              -e NODE_ENV=production \
-              -e PORT=3001 \
-              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
-              -e LOG_LEVEL=info \
-              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-api:latest
-
-      - name: Deploy Web to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ env.SERVER_HOST }}
-          username: ${{ env.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Stoppe und entferne alten Container
-            docker stop sharelocal-web || true
-            docker rm sharelocal-web || true
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+            docker pull $IMAGE_NAME
             
-            # Pull und starte neuen Container
-            docker pull ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web:latest
-            docker run -d \
-              --name sharelocal-web \
-              -p 3000:3000 \
-              --restart unless-stopped \
-              --network sharelocal-network \
-              -e NODE_ENV=production \
-              -e PORT=3000 \
-              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
-              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
-              ${{ env.DOCKERHUB_USERNAME }}/sharelocal-web:latest
-
-  # All Jobs Summary
-  summary:
-    name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [lint, build, test-api, test-web]
-    if: ${{ always() }}
-    steps:
-      - name: CI Status
-        run: |
-          echo "## CI Pipeline Status" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Test API: ${{ needs.test-api.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Test Web: ${{ needs.test-web.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "## Docker Build & Deploy Status" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📦 Build & Push Dev: ${{ needs.build-and-push-dev.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-            echo "📦 Build & Push Prd: ${{ needs.build-and-push-prd.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-            echo "🚀 Deploy Dev: ${{ needs.deploy-dev.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-            echo "🚀 Deploy Prd: ${{ needs.deploy-prd.result || 'skipped' }}" >> $GITHUB_STEP_SUMMARY
-          fi
+            if [ "${{ matrix.service }}" == "api" ]; then
+              docker run -d \
+                --name $CONTAINER_NAME \
+                -p 3001:3001 \
+                --restart unless-stopped \
+                --network sharelocal-network \
+                -e NODE_ENV=production \
+                -e PORT=3001 \
+                -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+                -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+                -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+                -e LOG_LEVEL=info \
+                $IMAGE_NAME
+            else
+              docker run -d \
+                --name $CONTAINER_NAME \
+                -p 3000:3000 \
+                --restart unless-stopped \
+                --network sharelocal-network \
+                -e NODE_ENV=production \
+                -e PORT=3000 \
+                -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
+                -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
+                $IMAGE_NAME
+            fi
