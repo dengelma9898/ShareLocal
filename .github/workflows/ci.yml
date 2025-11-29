@@ -9,10 +9,6 @@ on:
 env:
   REGISTRY: docker.io
   DOCKERHUB_USERNAME: dengelma9898
-  IMAGE_NAME_API_DEV: dengelma9898/sharelocal-api-dev
-  IMAGE_NAME_API_PRD: dengelma9898/sharelocal-api
-  IMAGE_NAME_WEB_DEV: dengelma9898/sharelocal-web-dev
-  IMAGE_NAME_WEB_PRD: dengelma9898/sharelocal-web
   SERVER_HOST: 87.106.208.51
   SERVER_USER: root
 
@@ -217,7 +213,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ matrix.image_name }}
+          images: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-${{ matrix.service }}-dev
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -279,7 +275,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ matrix.image_name }}
+          images: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-${{ matrix.service }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
