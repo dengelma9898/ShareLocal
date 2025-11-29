@@ -1,0 +1,28 @@
+# Docker Compose für Production mit Registry Images
+# Verwendung: docker-compose -f docker-compose.yml -f docker-compose.prd.registry.yml up
+# 
+# Voraussetzung: Images wurden von GitHub Actions gebaut und zu ghcr.io gepusht
+# Images werden von der Registry gepullt statt lokal gebaut
+
+version: '3.8'
+
+services:
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-api:latest
+    # Alternative: Verwende spezifischen Tag
+    # image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-api:main-abc1234
+    pull_policy: always  # Immer neueste Version pullen
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-web:latest
+    # Alternative: Verwende spezifischen Tag
+    # image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-web:main-abc1234
+    pull_policy: always  # Immer neueste Version pullen
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd/api}
+      NEXT_PUBLIC_BASE_PATH: /share-local/prd
+

@@ -1,0 +1,147 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [main, develop]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to build for'
+        required: true
+        default: 'prd'
+        type: choice
+        options:
+          - dev
+          - prd
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/sharelocal
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [api, web]
+        include:
+          - service: api
+            dockerfile: packages/api/Dockerfile
+            context: .
+          - service: web
+            dockerfile: packages/web/Dockerfile
+            context: .
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for API
+        if: matrix.service == 'api'
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Extract metadata (tags, labels) for Web
+        if: matrix.service == 'web'
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-web
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "environment=prd" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set build args for Web
+        if: matrix.service == 'web'
+        id: build-args-web
+        run: |
+          if [ "${{ steps.env.outputs.environment }}" == "prd" ]; then
+            echo "NEXT_PUBLIC_API_URL=https://nuernbergspots.de/share-local/prd/api" >> $GITHUB_OUTPUT
+            echo "NEXT_PUBLIC_BASE_PATH=/share-local/prd" >> $GITHUB_OUTPUT
+          else
+            echo "NEXT_PUBLIC_API_URL=http://nuernbergspots.de/share-local/dev/api" >> $GITHUB_OUTPUT
+            echo "NEXT_PUBLIC_BASE_PATH=/share-local/dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push API image
+        if: matrix.service == 'api'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Build and push Web image
+        if: matrix.service == 'web'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ steps.build-args-web.outputs.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_BASE_PATH=${{ steps.build-args-web.outputs.NEXT_PUBLIC_BASE_PATH }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Image digest
+        run: |
+          if [ "${{ matrix.service }}" == "api" ]; then
+            echo "API Image: ${{ steps.meta-api.outputs.tags }}"
+          else
+            echo "Web Image: ${{ steps.meta-web.outputs.tags }}"
+          fi
+

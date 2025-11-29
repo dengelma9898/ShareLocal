@@ -5,16 +5,48 @@
 ### Voraussetzungen
 - ✅ Server Setup bereits ausgeführt (einmalig)
 - ✅ Docker und Docker Compose installiert
+- ✅ Docker Login zu ghcr.io (für Registry Deployment)
 
 ---
 
-## Schritt 1: Repository klonen
+## Deployment-Methoden
+
+### Option 1: Registry Deployment (empfohlen) ⚡
+
+**Vorteile:** Schnell, kein Build auf Server, automatische Versionierung
+
+```bash
+# Siehe: docs/DEPLOYMENT_REGISTRY.md
+./scripts/deploy-from-registry.sh dev
+```
+
+### Option 2: Local Build 🔨
+
+**Vorteile:** Hot Reload möglich, vollständige Kontrolle
+
+```bash
+# Siehe: docs/DEV_ENVIRONMENT_SETUP.md
+./scripts/deploy-to-server.sh dev
+```
+
+---
+
+## Schritt 1: Minimales Setup (Registry)
 
 ```bash
 ssh user@nuernbergspots.de
 cd /opt/sharelocal/dev
-git clone <repository-url> .
+
+# Nur notwendige Dateien (oder kopiere manuell)
+git clone --depth 1 --filter=blob:none --sparse <repository-url> .
+git sparse-checkout set docker-compose.yml docker-compose.dev.registry.yml scripts infrastructure/nginx .env.production.example
 ```
+
+**Oder kopiere manuell:**
+- `docker-compose.yml`
+- `docker-compose.dev.registry.yml`
+- `scripts/deploy-from-registry.sh`
+- `.env.production.example`
 
 ---
 
@@ -30,6 +62,10 @@ nano .env.dev
 
 **Minimale .env.dev Konfiguration:**
 ```env
+# GitHub Repository Owner (für Registry Images)
+GITHUB_REPOSITORY_OWNER=dengelma9898
+
+# Database
 POSTGRES_USER=sharelocal
 POSTGRES_PASSWORD=<password>
 POSTGRES_DB=sharelocal_dev
@@ -47,7 +83,29 @@ NEXT_PUBLIC_BASE_PATH=/share-local/dev
 
 ---
 
-## Schritt 3: Deployen
+## Schritt 3: Docker Login (Registry Deployment)
+
+```bash
+# Erstelle GitHub Personal Access Token mit 'read:packages' Berechtigung
+# https://github.com/settings/tokens
+
+# Login zu ghcr.io
+echo $GITHUB_TOKEN | docker login ghcr.io -u <username> --password-stdin
+```
+
+---
+
+## Schritt 4: Deployen
+
+### Registry Deployment (empfohlen)
+
+```bash
+cd /opt/sharelocal/dev
+export $(cat .env.dev | grep -v '^#' | xargs)
+./scripts/deploy-from-registry.sh dev
+```
+
+### Local Build
 
 ```bash
 cd /opt/sharelocal/dev

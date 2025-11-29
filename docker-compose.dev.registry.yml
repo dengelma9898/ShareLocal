@@ -1,0 +1,30 @@
+# Docker Compose für Development mit Registry Images
+# Verwendung: docker-compose -f docker-compose.yml -f docker-compose.dev.registry.yml up
+# 
+# Voraussetzung: Images wurden von GitHub Actions gebaut und zu ghcr.io gepusht
+# Images werden von der Registry gepullt statt lokal gebaut
+# 
+# HINWEIS: Für lokale Entwicklung mit Hot Reload verwende docker-compose.dev.yml
+
+version: '3.8'
+
+services:
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-api:develop
+    # Alternative: Verwende spezifischen Tag
+    # image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-api:develop-abc1234
+    pull_policy: always
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-web:develop
+    # Alternative: Verwende spezifischen Tag
+    # image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-web:develop-abc1234
+    pull_policy: always
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://nuernbergspots.de/share-local/dev/api}
+      NEXT_PUBLIC_BASE_PATH: /share-local/dev
+
