@@ -282,10 +282,10 @@ jobs:
         include:
           - service: api
             dockerfile: packages/api/Dockerfile
-            image_name: dengelma9898/sharelocal-api
+            image_name: dengelma9898/sharelocal-api-prd
           - service: web
             dockerfile: packages/web/Dockerfile
-            image_name: dengelma9898/sharelocal-web
+            image_name: dengelma9898/sharelocal-web-prd
 
     steps:
       - name: Checkout repository
