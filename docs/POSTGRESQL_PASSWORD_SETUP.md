@@ -29,13 +29,15 @@ openssl rand -base64 32
 
 ### 2.1 Server Setup (einmalig)
 
+**Option A: Ein Container für alles (einfach)**
+
 ```bash
 ssh root@87.106.208.51
 
 # Erstelle Docker Network (falls nicht vorhanden)
 docker network create sharelocal-network || true
 
-# Starte PostgreSQL Container
+# Starte PostgreSQL Container (für Dev und Prd)
 docker run -d \
   --name sharelocal-postgres \
   --network sharelocal-network \
@@ -47,7 +49,40 @@ docker run -d \
   postgres:17-alpine
 ```
 
-**Ersetze:** `<DEIN_GENERIERTES_PASSWORD>` mit dem generierten Password
+**Option B: Separate Container für Dev und Prd (sicherer)**
+
+```bash
+ssh root@87.106.208.51
+
+# Erstelle Docker Network (falls nicht vorhanden)
+docker network create sharelocal-network || true
+
+# Starte Production PostgreSQL Container
+docker run -d \
+  --name sharelocal-postgres-prd \
+  --network sharelocal-network \
+  --restart unless-stopped \
+  -e POSTGRES_USER=sharelocal \
+  -e POSTGRES_PASSWORD=<PASSWORD_PRD> \
+  -e POSTGRES_DB=sharelocal \
+  -v sharelocal-postgres-prd-data:/var/lib/postgresql/data \
+  postgres:17-alpine
+
+# Starte Development PostgreSQL Container
+docker run -d \
+  --name sharelocal-postgres-dev \
+  --network sharelocal-network \
+  --restart unless-stopped \
+  -e POSTGRES_USER=sharelocal \
+  -e POSTGRES_PASSWORD=<PASSWORD_DEV> \
+  -e POSTGRES_DB=sharelocal_dev \
+  -v sharelocal-postgres-dev-data:/var/lib/postgresql/data \
+  postgres:17-alpine
+```
+
+**Ersetze:** 
+- `<DEIN_GENERIERTES_PASSWORD>` mit dem generierten Password (Option A)
+- `<PASSWORD_PRD>` und `<PASSWORD_DEV>` mit unterschiedlichen Passwords (Option B)
 
 ---
 
@@ -59,27 +94,39 @@ Gehe zu: `https://github.com/<owner>/ShareLocal/settings/secrets/actions`
 
 **Secret Name:** `DATABASE_URL_PRD`
 
-**Wert:**
+**Wert (Option A - Ein Container):**
 ```
-postgresql://sharelocal:<DEIN_GENERIERTES_PASSWORD>@sharelocal-postgres:5432/sharelocal?schema=public
+postgresql://sharelocal:<PASSWORD_PRD>@sharelocal-postgres:5432/sharelocal?schema=public
+```
+
+**Wert (Option B - Separate Container):**
+```
+postgresql://sharelocal:<PASSWORD_PRD>@sharelocal-postgres-prd:5432/sharelocal?schema=public
 ```
 
 **Wichtig:** 
-- Ersetze `<DEIN_GENERIERTES_PASSWORD>` mit dem **gleichen** Password wie im Server Setup
-- `sharelocal-postgres` ist der Container-Name (funktioniert im Docker Network)
+- Ersetze `<PASSWORD_PRD>` mit dem Production Password
+- Container-Name muss mit dem Server Setup übereinstimmen:
+  - Option A: `sharelocal-postgres`
+  - Option B: `sharelocal-postgres-prd`
 
-### 3.2 DATABASE_URL_DEV (optional)
-
-Falls du eine separate Development Database verwendest:
+### 3.2 DATABASE_URL_DEV
 
 **Secret Name:** `DATABASE_URL_DEV`
 
-**Wert:**
+**Wert (Option A - Ein Container, gleiches Password):**
 ```
-postgresql://sharelocal:<DEIN_GENERIERTES_PASSWORD>@sharelocal-postgres:5432/sharelocal_dev?schema=public
+postgresql://sharelocal:<PASSWORD_PRD>@sharelocal-postgres:5432/sharelocal_dev?schema=public
 ```
 
-**Oder:** Verwende das gleiche Password wie Production (einfacher)
+**Wert (Option B - Separate Container, unterschiedliche Passwords):**
+```
+postgresql://sharelocal:<PASSWORD_DEV>@sharelocal-postgres-dev:5432/sharelocal_dev?schema=public
+```
+
+**Wichtig:**
+- Option A: Gleiches Password wie Production, aber andere Database (`sharelocal_dev`)
+- Option B: Unterschiedliches Password und separater Container (`sharelocal-postgres-dev`)
 
 ---
 
@@ -99,23 +146,31 @@ postgresql://sharelocal:<DEIN_GENERIERTES_PASSWORD>@sharelocal-postgres:5432/sha
 - DATABASE_URL_PRD: `postgresql://sharelocal:<password>@sharelocal-postgres:5432/sharelocal?schema=public`
 - DATABASE_URL_DEV: `postgresql://sharelocal:<password>@sharelocal-postgres:5432/sharelocal_dev?schema=public`
 
-### Option 2: Separate Passwords (sicherer)
+### Option 2: Separate Passwords und Container (sicherer)
 
 **Vorteile:**
 - ✅ Bessere Isolation zwischen Dev und Prd
 - ✅ Sicherer
+- ✅ Separate Volumes (Daten bleiben getrennt)
 
 **Nachteile:**
 - ⚠️ Mehr zu verwalten
+- ⚠️ Zwei Container laufen parallel
 
-**Verwendung:**
-- Server Setup: `<password-prd>` für Production Database
-- DATABASE_URL_PRD: `postgresql://sharelocal:<password-prd>@sharelocal-postgres:5432/sharelocal?schema=public`
-- DATABASE_URL_DEV: `postgresql://sharelocal:<password-dev>@sharelocal-postgres:5432/sharelocal_dev?schema=public`
-
-**Für separate Dev Database:**
+**Server Setup:**
 ```bash
-# Starte separate Dev Database Container
+# Production Container
+docker run -d \
+  --name sharelocal-postgres-prd \
+  --network sharelocal-network \
+  --restart unless-stopped \
+  -e POSTGRES_USER=sharelocal \
+  -e POSTGRES_PASSWORD=<password-prd> \
+  -e POSTGRES_DB=sharelocal \
+  -v sharelocal-postgres-prd-data:/var/lib/postgresql/data \
+  postgres:17-alpine
+
+# Development Container
 docker run -d \
   --name sharelocal-postgres-dev \
   --network sharelocal-network \
@@ -126,6 +181,15 @@ docker run -d \
   -v sharelocal-postgres-dev-data:/var/lib/postgresql/data \
   postgres:17-alpine
 ```
+
+**GitHub Secrets:**
+- DATABASE_URL_PRD: `postgresql://sharelocal:<password-prd>@sharelocal-postgres-prd:5432/sharelocal?schema=public`
+- DATABASE_URL_DEV: `postgresql://sharelocal:<password-dev>@sharelocal-postgres-dev:5432/sharelocal_dev?schema=public`
+
+**Wichtig:** 
+- Container-Name für Prd: `sharelocal-postgres-prd` → DATABASE_URL muss `sharelocal-postgres-prd` verwenden
+- Container-Name für Dev: `sharelocal-postgres-dev` → DATABASE_URL muss `sharelocal-postgres-dev` verwenden
+- Container-Namen müssen in DATABASE_URL exakt übereinstimmen!
 
 ---
 
@@ -239,3 +303,27 @@ openssl rand -base64 32
 4. ⏳ Deployment testen
 5. ⏳ Database Connection prüfen
 
+
+
+
+
+docker run -d \
+  --name sharelocal-postgres \
+  --network sharelocal-network \
+  --restart unless-stopped \
+  -e POSTGRES_USER=sharelocal \
+  -e POSTGRES_PASSWORD=gPrsCR2jxzxeHEe \
+  -e POSTGRES_DB=sharelocal \
+  -v sharelocal-postgres-data:/var/lib/postgresql/data \
+  postgres:17-alpine
+
+
+docker run -d \
+  --name sharelocal-postgres \
+  --network sharelocal-network \
+  --restart unless-stopped \
+  -e POSTGRES_USER=sharelocal \
+  -e POSTGRES_PASSWORD=feksa9faxcubmedvIt \
+  -e POSTGRES_DB=sharelocal \
+  -v sharelocal-postgres-data:/var/lib/postgresql/data \
+  postgres:17-alpine
