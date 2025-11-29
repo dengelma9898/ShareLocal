@@ -230,6 +230,7 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             CONTAINER_NAME="sharelocal-${{ matrix.service }}-dev"
             IMAGE_NAME="${{ matrix.image_name }}:latest"
             
@@ -240,6 +241,7 @@ jobs:
             # Pull latest image
             docker pull $IMAGE_NAME
             
+            # Start container based on service type
             if [ "${{ matrix.service }}" == "api" ]; then
               docker run -d \
                 --name $CONTAINER_NAME \
@@ -265,6 +267,16 @@ jobs:
                 -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
                 $IMAGE_NAME
             fi
+            
+            # Verify container is running
+            sleep 2
+            if ! docker ps | grep -q $CONTAINER_NAME; then
+              echo "Error: Container $CONTAINER_NAME failed to start"
+              docker logs $CONTAINER_NAME 2>&1 || true
+              exit 1
+            fi
+            
+            echo "✅ Container $CONTAINER_NAME started successfully"
 
   # ============================================
   # Deployment: Production (nur nach Bestätigung)
@@ -322,6 +334,7 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             CONTAINER_NAME="sharelocal-${{ matrix.service }}"
             IMAGE_NAME="${{ matrix.image_name }}:latest"
             
@@ -332,6 +345,7 @@ jobs:
             # Pull latest image
             docker pull $IMAGE_NAME
             
+            # Start container based on service type
             if [ "${{ matrix.service }}" == "api" ]; then
               docker run -d \
                 --name $CONTAINER_NAME \
@@ -357,3 +371,13 @@ jobs:
                 -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
                 $IMAGE_NAME
             fi
+            
+            # Verify container is running
+            sleep 2
+            if ! docker ps | grep -q $CONTAINER_NAME; then
+              echo "Error: Container $CONTAINER_NAME failed to start"
+              docker logs $CONTAINER_NAME 2>&1 || true
+              exit 1
+            fi
+            
+            echo "✅ Container $CONTAINER_NAME started successfully"
