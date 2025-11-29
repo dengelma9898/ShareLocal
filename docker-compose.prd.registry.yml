@@ -1,25 +1,25 @@
-# Docker Compose für Production mit Registry Images
+# Docker Compose für Production mit Docker Hub Images
 # Verwendung: docker-compose -f docker-compose.yml -f docker-compose.prd.registry.yml up
 # 
-# Voraussetzung: Images wurden von GitHub Actions gebaut und zu ghcr.io gepusht
-# Images werden von der Registry gepullt statt lokal gebaut
+# Voraussetzung: Images wurden von GitHub Actions gebaut und zu Docker Hub gepusht
+# Images werden von Docker Hub gepullt statt lokal gebaut
 
 version: '3.8'
 
 services:
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-api:latest
+    image: ${DOCKERHUB_USERNAME:-dengelma9898}/sharelocal-api:latest
     # Alternative: Verwende spezifischen Tag
-    # image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-api:main-abc1234
+    # image: ${DOCKERHUB_USERNAME:-dengelma9898}/sharelocal-api:main-abc1234
     pull_policy: always  # Immer neueste Version pullen
     environment:
       NODE_ENV: production
       LOG_LEVEL: info
 
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-web:latest
+    image: ${DOCKERHUB_USERNAME:-dengelma9898}/sharelocal-web:latest
     # Alternative: Verwende spezifischen Tag
-    # image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-dengelma9898}/sharelocal-web:main-abc1234
+    # image: ${DOCKERHUB_USERNAME:-dengelma9898}/sharelocal-web:main-abc1234
     pull_policy: always  # Immer neueste Version pullen
     environment:
       NODE_ENV: production
