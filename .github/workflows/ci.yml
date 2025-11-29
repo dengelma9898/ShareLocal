@@ -233,8 +233,11 @@ jobs:
             CONTAINER_NAME="sharelocal-${{ matrix.service }}-dev"
             IMAGE_NAME="${{ matrix.image_name }}:latest"
             
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
+            # Stop and remove existing container (ignore errors if container doesn't exist)
+            docker stop $CONTAINER_NAME 2>/dev/null || true
+            docker rm $CONTAINER_NAME 2>/dev/null || true
+            
+            # Pull latest image
             docker pull $IMAGE_NAME
             
             if [ "${{ matrix.service }}" == "api" ]; then
@@ -322,8 +325,11 @@ jobs:
             CONTAINER_NAME="sharelocal-${{ matrix.service }}"
             IMAGE_NAME="${{ matrix.image_name }}:latest"
             
-            docker stop $CONTAINER_NAME || true
-            docker rm $CONTAINER_NAME || true
+            # Stop and remove existing container (ignore errors if container doesn't exist)
+            docker stop $CONTAINER_NAME 2>/dev/null || true
+            docker rm $CONTAINER_NAME 2>/dev/null || true
+            
+            # Pull latest image
             docker pull $IMAGE_NAME
             
             if [ "${{ matrix.service }}" == "api" ]; then
