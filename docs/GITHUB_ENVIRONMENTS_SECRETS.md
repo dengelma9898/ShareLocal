@@ -47,7 +47,7 @@ Diese Secrets sind nur für das `prd` Environment verfügbar:
 
 | Secret Name | Wert | Beschreibung |
 |-------------|------|--------------|
-| `DOCKERHUB_USERNAME` | `dengelma9898` | Docker Hub Benutzername |
+| `DOCKERHUB_USERNAME` | `dengelma` | Docker Hub Benutzername |
 | `DOCKERHUB_TOKEN` | `dckr_pat_...` | Docker Hub Access Token |
 | `SSH_PRIVATE_KEY` | `-----BEGIN OPENSSH...` | SSH Private Key |
 
