@@ -2,7 +2,7 @@ name: Docker Build and Deploy
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -46,9 +46,69 @@ jobs:
       - name: Run tests
         run: pnpm --filter @sharelocal/api test
 
+  build:
+    needs: test
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service: [api, web]
+        include:
+          - service: api
+            dockerfile: packages/api/Dockerfile
+            context: .
+          - service: web
+            dockerfile: packages/web/Dockerfile
+            context: .
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKERHUB_USERNAME }}/sharelocal-${{ matrix.service }}
+          tags: |
+            type=sha,format=short
+            type=ref,event=branch
+
+      - name: Set build args for Web
+        if: matrix.service == 'web'
+        id: build-args-web
+        run: |
+          echo "NEXT_PUBLIC_API_URL=http://nuernbergspots.de/share-local/dev/api" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_BASE_PATH=/share-local/dev" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image (no push for PRs)
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', steps.build-args-web.outputs.NEXT_PUBLIC_API_URL) || '' }}
+            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', steps.build-args-web.outputs.NEXT_PUBLIC_BASE_PATH) || '' }}
+          platforms: linux/amd64
+
   build-and-push-dev:
     needs: test
-    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: dev
     runs-on: ubuntu-latest
     permissions:
@@ -112,7 +172,7 @@ jobs:
 
   deploy-dev:
     needs: build-and-push-dev
-    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: dev
     runs-on: ubuntu-latest
     steps:
@@ -168,7 +228,7 @@ jobs:
 
   build-and-push-prd:
     needs: test
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: prd
     runs-on: ubuntu-latest
     permissions:
@@ -232,7 +292,7 @@ jobs:
 
   deploy-prd:
     needs: build-and-push-prd
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: prd
     runs-on: ubuntu-latest
     steps:
