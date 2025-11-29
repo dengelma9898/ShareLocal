@@ -117,7 +117,7 @@ jobs:
           labels: ${{ steps.meta-api.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
 
       - name: Build and push Web image
         if: matrix.service == 'web'
@@ -133,7 +133,7 @@ jobs:
             NEXT_PUBLIC_BASE_PATH=${{ steps.build-args-web.outputs.NEXT_PUBLIC_BASE_PATH }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
 
       - name: Image digest
         run: |
