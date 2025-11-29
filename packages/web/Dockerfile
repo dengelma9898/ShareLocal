@@ -67,8 +67,7 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy built application
-# Next.js standalone output includes everything needed to run the app
-COPY --from=builder --chown=nextjs:nodejs /app/packages/web/public ./public
+# Next.js standalone output includes everything needed to run the app (including public if it exists)
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packages/web/.next/static
 # package.json is already included in standalone, but we copy it explicitly for reference
