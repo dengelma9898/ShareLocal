@@ -300,14 +300,14 @@ jobs:
 
     strategy:
       matrix:
-        service: [api, web]
+        service: [api]  # Web temporarily disabled - port 3000 conflict
         include:
           - service: api
             dockerfile: packages/api/Dockerfile
             image_name: dengelma/sharelocal-api-prd
-          - service: web
-            dockerfile: packages/web/Dockerfile
-            image_name: dengelma/sharelocal-web-prd
+          # - service: web
+          #   dockerfile: packages/web/Dockerfile
+          #   image_name: dengelma/sharelocal-web-prd
 
     steps:
       - name: Checkout repository
