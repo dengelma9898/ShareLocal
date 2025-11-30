@@ -183,7 +183,7 @@ jobs:
             # Cleanup: Remove any old containers that might be using wrong port (3001)
             # This handles the case where an old container was deployed with wrong port
             docker ps -a --filter "name=sharelocal-web-dev" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
-            docker ps -a --filter "publish=3001" --filter "name=sharelocal-web" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            docker ps -a --filter "publish=3001" --filter "name=^sharelocal-web-dev$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
             
             # Wait a moment to ensure container is fully removed and ports are freed
             sleep 3
@@ -288,8 +288,9 @@ jobs:
             docker ps -a --filter "publish=3102" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
             
             # Cleanup: Remove any old containers that might be using wrong port (3101)
-            docker ps -a --filter "name=sharelocal-web" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
-            docker ps -a --filter "publish=3101" --filter "name=sharelocal-web" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            # WICHTIG: Nur Container mit exaktem Namen "sharelocal-web" (nicht "sharelocal-web-dev"!)
+            docker ps -a --filter "name=^sharelocal-web$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            docker ps -a --filter "publish=3101" --filter "name=^sharelocal-web$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
             
             # Wait a moment to ensure container is fully removed and ports are freed
             sleep 3
