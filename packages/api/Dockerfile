@@ -1,82 +1,48 @@
 # Multi-stage Dockerfile für ShareLocal API
 # Node.js 24.x LTS (Krypton)
+# Standalone build - treats API as independent package
 
-# Stage 1: Dependencies
-FROM node:24-alpine AS deps
+# Stage 1: Build API
+FROM node:24-alpine AS api-builder
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Copy API source
+COPY packages/api/package.json ./package.json
+COPY packages/api/src ./src
+COPY packages/api/tsconfig.json ./tsconfig.json
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/api/package.json ./packages/api/
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/database/package.json ./packages/database/
+# Copy Prisma schema for client generation
+COPY packages/database/prisma ./packages/database/prisma
 
-# Install dependencies (production only in final stage)
-# Note: We install all deps here for build stage, will filter in production stage
-RUN pnpm install --frozen-lockfile
-
-# Stage 2: Build
-FROM node:24-alpine AS builder
-WORKDIR /app
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages ./packages
-
-# Copy source code
-COPY packages/api ./packages/api
-COPY packages/shared ./packages/shared
-COPY packages/database ./packages/database
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+# Install ALL dependencies with npm (standalone)
+# This installs dotenv, @prisma/client, express, etc. directly from package.json
+RUN npm install --legacy-peer-deps
 
 # Generate Prisma Client
-# prisma generate only needs the schema, no database connection required
-RUN pnpm --filter @sharelocal/database db:generate
-
-# Build shared package
-RUN pnpm --filter @sharelocal/shared build
+RUN npm install -D prisma@^5.19.0 && \
+    npx prisma generate --schema=./packages/database/prisma/schema.prisma && \
+    npm uninstall prisma
 
 # Build API
-RUN pnpm --filter @sharelocal/api build
+RUN npm run build
 
-# Stage 3: Production
+# Stage 2: Production
 FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Create non-root user (we'll switch to it after installing dependencies)
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
-# Copy package files and workspace structure
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder --chown=nodejs:nodejs /app/packages/api/package.json ./packages/api/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/shared/package.json ./packages/shared/package.json
-COPY --from=builder --chown=nodejs:nodejs /app/packages/database/package.json ./packages/database/package.json
+# Copy package.json and built application
+COPY --from=api-builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=api-builder --chown=nodejs:nodejs /app/dist ./dist
 
-# Copy node_modules from builder (includes dotenv and Prisma Client)
-# Then run pnpm install --prod to fix symlinks and ensure correct structure
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-# Fix pnpm workspace structure and ensure all symlinks are correct
-# This ensures dotenv and other dependencies are properly accessible
-RUN pnpm install --frozen-lockfile --prod
-
-# Copy built application and shared package (if needed)
-COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/shared/dist ./packages/shared/dist
+# Copy all node_modules (includes dotenv and all dependencies)
+# Simple copy - no workspace complexity
+COPY --from=api-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Set user
 USER nodejs
@@ -90,4 +56,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start application
 CMD ["node", "dist/index.js"]
-
