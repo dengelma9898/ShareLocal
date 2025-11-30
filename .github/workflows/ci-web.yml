@@ -1,0 +1,302 @@
+name: CI Web
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'packages/web/**'
+      - 'packages/shared/**'
+      - 'packages/database/**'
+      - '.github/workflows/ci-web.yml'
+  pull_request:
+    branches: ['**']
+    paths:
+      - 'packages/web/**'
+      - 'packages/shared/**'
+      - 'packages/database/**'
+      - '.github/workflows/ci-web.yml'
+
+env:
+  DOCKERHUB_USERNAME: dengelma
+  SERVER_HOST: 87.106.208.51
+  SERVER_USER: root
+
+jobs:
+  # ============================================
+  # CI: Lint, Build, Test
+  # ============================================
+  
+  lint:
+    name: Lint Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run linter (Web)
+        run: |
+          cd packages/web
+          pnpm lint || echo "⚠️ Web linting skipped"
+          exit 0
+
+  build:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm --filter @sharelocal/database db:generate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+
+      - name: Build Shared Package
+        run: pnpm --filter @sharelocal/shared build
+
+      - name: Build Web
+        run: pnpm --filter @sharelocal/web build
+
+  test:
+    name: Test Web
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @sharelocal/web exec playwright install --with-deps chromium
+
+      - name: Run Web E2E tests
+        run: pnpm --filter @sharelocal/web test:e2e:mocked
+        env:
+          NODE_ENV: test
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            packages/web/test-results/
+            packages/web/playwright-report/
+          retention-days: 30
+
+  # ============================================
+  # Deployment: Dev (automatisch für main)
+  # ============================================
+  
+  deploy-dev:
+    needs: [test]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packages/web/Dockerfile
+          push: true
+          tags: dengelma/sharelocal-web-dev:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}
+            NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          timeout: 30s
+          script: |
+            set -e
+            CONTAINER_NAME="sharelocal-web-dev"
+            IMAGE_NAME="dengelma/sharelocal-web-dev:latest"
+            
+            # Force stop and remove existing container
+            docker stop $CONTAINER_NAME 2>/dev/null || true
+            docker rm -f $CONTAINER_NAME 2>/dev/null || true
+            
+            # Wait a moment to ensure container is fully removed
+            sleep 1
+            
+            # Pull latest image
+            docker pull $IMAGE_NAME
+            
+            # Start container
+            docker run -d \
+              --name $CONTAINER_NAME \
+              -p 3000:3000 \
+              --restart unless-stopped \
+              --network sharelocal-network \
+              -e NODE_ENV=development \
+              -e PORT=3000 \
+              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
+              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
+              $IMAGE_NAME
+            
+            # Verify container is running
+            sleep 2
+            if ! docker ps | grep -q $CONTAINER_NAME; then
+              echo "Error: Container $CONTAINER_NAME failed to start"
+              docker logs $CONTAINER_NAME 2>&1 || true
+              exit 1
+            fi
+            
+            echo "✅ Container $CONTAINER_NAME started successfully"
+            
+            # Cleanup: Remove unused Docker images
+            echo "🧹 Cleaning up unused Docker images..."
+            docker image prune -af --filter "until=24h" || true
+            docker image prune -f || true
+
+  # ============================================
+  # Deployment: Production (nur nach Bestätigung)
+  # ============================================
+  
+  deploy-prd:
+    needs: [deploy-dev]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: prd
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: packages/web/Dockerfile
+          push: true
+          tags: dengelma/sharelocal-web-prd:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}
+            NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          timeout: 30s
+          script: |
+            set -e
+            CONTAINER_NAME="sharelocal-web"
+            IMAGE_NAME="dengelma/sharelocal-web-prd:latest"
+            
+            # Force stop and remove existing container
+            docker stop $CONTAINER_NAME 2>/dev/null || true
+            docker rm -f $CONTAINER_NAME 2>/dev/null || true
+            
+            # Wait a moment to ensure container is fully removed
+            sleep 1
+            
+            # Pull latest image
+            docker pull $IMAGE_NAME
+            
+            # Start container
+            docker run -d \
+              --name $CONTAINER_NAME \
+              -p 3000:3000 \
+              --restart unless-stopped \
+              --network sharelocal-network \
+              -e NODE_ENV=production \
+              -e PORT=3000 \
+              -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
+              -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
+              $IMAGE_NAME
+            
+            # Verify container is running
+            sleep 2
+            if ! docker ps | grep -q $CONTAINER_NAME; then
+              echo "Error: Container $CONTAINER_NAME failed to start"
+              docker logs $CONTAINER_NAME 2>&1 || true
+              exit 1
+            fi
+            
+            echo "✅ Container $CONTAINER_NAME started successfully"
+            
+            # Cleanup: Remove unused Docker images
+            echo "🧹 Cleaning up unused Docker images..."
+            docker image prune -af --filter "until=24h" || true
+            docker image prune -f || true
+

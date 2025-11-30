@@ -1,10 +1,20 @@
-name: CI
+name: CI API
 
 on:
   push:
     branches: ['**']
+    paths:
+      - 'packages/api/**'
+      - 'packages/database/**'
+      - 'packages/shared/**'
+      - '.github/workflows/ci-api.yml'
   pull_request:
     branches: ['**']
+    paths:
+      - 'packages/api/**'
+      - 'packages/database/**'
+      - 'packages/shared/**'
+      - '.github/workflows/ci-api.yml'
 
 env:
   DOCKERHUB_USERNAME: dengelma
@@ -13,11 +23,11 @@ env:
 
 jobs:
   # ============================================
-  # CI: Lint, Build, Test (für alle Branches)
+  # CI: Lint, Build, Test
   # ============================================
   
   lint:
-    name: Lint
+    name: Lint API
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -38,14 +48,8 @@ jobs:
       - name: Run linter (API)
         run: pnpm --filter @sharelocal/api lint
 
-      - name: Run linter (Web)
-        run: |
-          cd packages/web
-          pnpm lint || echo "⚠️ Web linting skipped"
-          exit 0
-
   build:
-    name: Build
+    name: Build API
     runs-on: ubuntu-latest
     needs: lint
     steps:
@@ -79,10 +83,7 @@ jobs:
           JWT_SECRET: test-jwt-secret-key-min-32-chars-long-for-testing
           ENCRYPTION_KEY: test-encryption-key-min-32-chars-long-for-testing
 
-      - name: Build Web
-        run: pnpm --filter @sharelocal/web build
-
-  test-api:
+  test:
     name: Test API
     runs-on: ubuntu-latest
     needs: build
@@ -136,67 +137,18 @@ jobs:
           JWT_SECRET: test-jwt-secret-key-min-32-chars-long-for-testing
           ENCRYPTION_KEY: test-encryption-key-min-32-chars-long-for-testing
 
-  test-web:
-    name: Test Web
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: pnpm --filter @sharelocal/web exec playwright install --with-deps chromium
-
-      - name: Run Web E2E tests
-        run: pnpm --filter @sharelocal/web test:e2e:mocked
-        env:
-          NODE_ENV: test
-
-      - name: Upload Playwright test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: |
-            packages/web/test-results/
-            packages/web/playwright-report/
-          retention-days: 30
-
   # ============================================
   # Deployment: Dev (automatisch für main)
   # ============================================
   
   deploy-dev:
-    needs: [test-api, test-web]
+    needs: [test]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
-    strategy:
-      matrix:
-        service: [api]  # Web temporarily disabled - port 3000 conflict
-        include:
-          - service: api
-            dockerfile: packages/api/Dockerfile
-            image_name: dengelma/sharelocal-api-dev
-          # - service: web
-          #   dockerfile: packages/web/Dockerfile
-          #   image_name: dengelma/sharelocal-web-dev
 
     steps:
       - name: Checkout repository
@@ -215,12 +167,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: packages/api/Dockerfile
           push: true
-          tags: ${{ matrix.image_name }}:latest
-          build-args: |
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api') || '' }}
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev') || '' }}
+          tags: dengelma/sharelocal-api-dev:latest
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -235,8 +184,8 @@ jobs:
           timeout: 30s
           script: |
             set -e
-            CONTAINER_NAME="sharelocal-${{ matrix.service }}-dev"
-            IMAGE_NAME="${{ matrix.image_name }}:latest"
+            CONTAINER_NAME="sharelocal-api-dev"
+            IMAGE_NAME="dengelma/sharelocal-api-dev:latest"
             
             # Force stop and remove existing container
             docker stop $CONTAINER_NAME 2>/dev/null || true
@@ -248,32 +197,19 @@ jobs:
             # Pull latest image
             docker pull $IMAGE_NAME
             
-            # Start container based on service type
-            if [ "${{ matrix.service }}" == "api" ]; then
-              docker run -d \
-                --name $CONTAINER_NAME \
-                -p 3001:3001 \
-                --restart unless-stopped \
-                --network sharelocal-network \
-                -e NODE_ENV=development \
-                -e PORT=3001 \
-                -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-                -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-                -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
-                -e LOG_LEVEL=debug \
-                $IMAGE_NAME
-            else
-              docker run -d \
-                --name $CONTAINER_NAME \
-                -p 3000:3000 \
-                --restart unless-stopped \
-                --network sharelocal-network \
-                -e NODE_ENV=development \
-                -e PORT=3000 \
-                -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
-                -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
-                $IMAGE_NAME
-            fi
+            # Start container
+            docker run -d \
+              --name $CONTAINER_NAME \
+              -p 3001:3001 \
+              --restart unless-stopped \
+              --network sharelocal-network \
+              -e NODE_ENV=development \
+              -e PORT=3001 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+              -e LOG_LEVEL=debug \
+              $IMAGE_NAME
             
             # Verify container is running
             sleep 2
@@ -285,10 +221,9 @@ jobs:
             
             echo "✅ Container $CONTAINER_NAME started successfully"
             
-            # Cleanup: Remove unused Docker images (keep last 3)
+            # Cleanup: Remove unused Docker images
             echo "🧹 Cleaning up unused Docker images..."
             docker image prune -af --filter "until=24h" || true
-            # Remove dangling images
             docker image prune -f || true
 
   # ============================================
@@ -304,17 +239,6 @@ jobs:
       contents: read
       packages: write
 
-    strategy:
-      matrix:
-        service: [api]  # Web temporarily disabled - port 3000 conflict
-        include:
-          - service: api
-            dockerfile: packages/api/Dockerfile
-            image_name: dengelma/sharelocal-api-prd
-          # - service: web
-          #   dockerfile: packages/web/Dockerfile
-          #   image_name: dengelma/sharelocal-web-prd
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -332,12 +256,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: packages/api/Dockerfile
           push: true
-          tags: ${{ matrix.image_name }}:latest
-          build-args: |
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_API_URL={0}', secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api') || '' }}
-            ${{ matrix.service == 'web' && format('NEXT_PUBLIC_BASE_PATH={0}', secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd') || '' }}
+          tags: dengelma/sharelocal-api-prd:latest
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -352,8 +273,8 @@ jobs:
           timeout: 30s
           script: |
             set -e
-            CONTAINER_NAME="sharelocal-${{ matrix.service }}"
-            IMAGE_NAME="${{ matrix.image_name }}:latest"
+            CONTAINER_NAME="sharelocal-api"
+            IMAGE_NAME="dengelma/sharelocal-api-prd:latest"
             
             # Force stop and remove existing container
             docker stop $CONTAINER_NAME 2>/dev/null || true
@@ -365,32 +286,19 @@ jobs:
             # Pull latest image
             docker pull $IMAGE_NAME
             
-            # Start container based on service type
-            if [ "${{ matrix.service }}" == "api" ]; then
-              docker run -d \
-                --name $CONTAINER_NAME \
-                -p 3101:3101 \
-                --restart unless-stopped \
-                --network sharelocal-network \
-                -e NODE_ENV=production \
-                -e PORT=3101 \
-                -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-                -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-                -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
-                -e LOG_LEVEL=info \
-                $IMAGE_NAME
-            else
-              docker run -d \
-                --name $CONTAINER_NAME \
-                -p 3000:3000 \
-                --restart unless-stopped \
-                --network sharelocal-network \
-                -e NODE_ENV=production \
-                -e PORT=3000 \
-                -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
-                -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
-                $IMAGE_NAME
-            fi
+            # Start container
+            docker run -d \
+              --name $CONTAINER_NAME \
+              -p 3101:3101 \
+              --restart unless-stopped \
+              --network sharelocal-network \
+              -e NODE_ENV=production \
+              -e PORT=3101 \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+              -e LOG_LEVEL=info \
+              $IMAGE_NAME
             
             # Verify container is running
             sleep 2
@@ -402,8 +310,8 @@ jobs:
             
             echo "✅ Container $CONTAINER_NAME started successfully"
             
-            # Cleanup: Remove unused Docker images (keep last 3)
+            # Cleanup: Remove unused Docker images
             echo "🧹 Cleaning up unused Docker images..."
             docker image prune -af --filter "until=24h" || true
-            # Remove dangling images
             docker image prune -f || true
+
