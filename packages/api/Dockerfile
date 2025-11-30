@@ -36,8 +36,8 @@ COPY packages/database ./packages/database
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 
 # Generate Prisma Client
-# DATABASE_URL is required for Prisma generate (can be dummy value)
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter @sharelocal/database db:generate
+# prisma generate only needs the schema, no database connection required
+RUN pnpm --filter @sharelocal/database db:generate
 
 # Build shared package
 RUN pnpm --filter @sharelocal/shared build
@@ -74,10 +74,10 @@ COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 RUN pnpm install --frozen-lockfile --prod
 
 # Generate Prisma Client (prisma CLI is needed, install temporarily)
-# DATABASE_URL is required for Prisma generate (can be dummy value)
-RUN pnpm add -D prisma@^5.19.0 && \
-    DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter @sharelocal/database db:generate && \
-    pnpm remove prisma
+# prisma generate only needs the schema, no database connection required
+RUN pnpm add -D -w prisma@^5.19.0 && \
+    pnpm --filter @sharelocal/database db:generate && \
+    pnpm remove -w prisma
 
 # Copy built application and shared package (if needed)
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
