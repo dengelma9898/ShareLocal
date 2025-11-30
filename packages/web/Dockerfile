@@ -83,8 +83,10 @@ USER nextjs
 EXPOSE 3000
 
 # Health check (uses PORT env var, defaults to 3000)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "const port = process.env.PORT || '3000'; require('http').get(`http://localhost:${port}/health`, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# WICHTIG: start-period auf 30s erhöht, damit Next.js Zeit zum Starten hat
+# basePath wird NICHT verwendet, da /health immer auf Root-Level verfügbar sein sollte
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+  CMD node -e "const port = process.env.PORT || '3000'; require('http').get(`http://localhost:${port}/health`, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', (e) => {console.error('Health check error:', e.message); process.exit(1)})"
 
 # Start application
 # Next.js standalone output structure: packages/web/server.js
