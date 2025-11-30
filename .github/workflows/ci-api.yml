@@ -200,11 +200,11 @@ jobs:
             # Start container
             docker run -d \
               --name $CONTAINER_NAME \
-              -p 3001:3001 \
+              -p 3002:3002 \
               --restart unless-stopped \
               --network sharelocal-network \
               -e NODE_ENV=development \
-              -e PORT=3001 \
+              -e PORT=3002 \
               -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
@@ -289,11 +289,11 @@ jobs:
             # Start container
             docker run -d \
               --name $CONTAINER_NAME \
-              -p 3101:3101 \
+              -p 3102:3102 \
               --restart unless-stopped \
               --network sharelocal-network \
               -e NODE_ENV=production \
-              -e PORT=3101 \
+              -e PORT=3102 \
               -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
