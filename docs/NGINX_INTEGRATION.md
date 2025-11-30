@@ -93,24 +93,16 @@ location /share-local/prd/health {
 }
 ```
 
-## Wichtiger Hinweis: Port-Konflikt
+## Port-Struktur
 
-**Aktuell:** Beide Environments (dev und prd) verwenden Port 3001.
+**Konsistent mit bestehender Struktur:**
+- Dev API: Port **3001** (analog zu anderen Apps: 3000)
+- Prd API: Port **3101** (analog zu anderen Apps: 3100)
 
-**Problem:** Wenn du später separate Container für dev und prd haben willst, brauchst du unterschiedliche Ports.
-
-**Lösung für später:**
-- Dev API: Port 3001 (wie jetzt)
-- Prd API: Port 3002 (oder anderer freier Port)
-
-Dann ändere die Production Location:
-```nginx
-location /share-local/prd/api {
-    # ...
-    proxy_pass http://localhost:3002;  # Statt 3001
-    # ...
-}
-```
+**Vorteile:**
+- ✅ Konsistente Port-Struktur über alle Apps hinweg
+- ✅ Separate Container für dev und prd möglich
+- ✅ Einfach zu merken: dev = 300x, prd = 310x
 
 ## Schritt-für-Schritt Anleitung
 
@@ -215,12 +207,14 @@ curl https://nuernbergspots.de/share-local/prd/api/
 
 ### Problem: Port-Konflikt zwischen dev und prd
 
-**Aktuell:** Beide verwenden Port 3001 (gleicher Container).
+**Gelöst:** Separate Ports:
+- Dev API: Port 3001
+- Prd API: Port 3101
 
-**Für später:** Wenn du separate Container willst:
-1. Ändere Production Container auf Port 3002
-2. Ändere Production Location auf `proxy_pass http://localhost:3002;`
-3. Aktualisiere GitHub Actions Workflow für Production Port
+**Falls Probleme auftreten:**
+1. Prüfe ob beide Container laufen: `docker ps | grep sharelocal-api`
+2. Prüfe ob Ports korrekt gemappt sind: `docker ps | grep -E "3001|3101"`
+3. Prüfe Container-Logs: `docker logs sharelocal-api-dev` und `docker logs sharelocal-api`
 
 ---
 

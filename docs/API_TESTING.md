@@ -14,8 +14,8 @@ Diese Anleitung zeigt dir, wie du die deployed API testen kannst.
 - **Port**: `3001` (intern)
 
 **Production Environment:**
-- **URL (über Nginx)**: `http://nuernbergspots.de/share-local/prd/api` (später HTTPS)
-- **Port**: `3001` (intern)
+- **URL (über Nginx)**: `https://nuernbergspots.de/share-local/prd/api`
+- **Port**: `3101` (intern, analog zu anderen Apps: 3100)
 
 > **Wichtig**: Die API sollte über Nginx unter `/share-local/dev/api` erreichbar sein. Falls Nginx noch nicht konfiguriert ist, siehe Abschnitt "Nginx Setup" weiter unten.
 
