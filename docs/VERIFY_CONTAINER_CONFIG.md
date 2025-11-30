@@ -105,14 +105,22 @@ docker exec sharelocal-api-dev sh -c "apk info openssl 2>/dev/null && echo '✅ 
 ```bash
 # Zeige alle wichtigen Environment-Variablen
 docker exec sharelocal-api-dev printenv | grep -E "DATABASE_URL|JWT_SECRET|ENCRYPTION_KEY|PORT|NODE_ENV" | sed 's/=.*/=***/'
+
+# Prüfe DATABASE_URL auf Leerzeichen (häufiger Fehler!)
+docker exec sharelocal-api-dev printenv DATABASE_URL | grep -o ":[[:space:]]" && echo "❌ Leerzeichen in DATABASE_URL gefunden!" || echo "✅ Kein Leerzeichen"
 ```
 
 **Erwartet:**
 - ✅ `DATABASE_URL` ist gesetzt (Format: `postgresql://user:pass@host:5432/db`)
+- ✅ **KEIN Leerzeichen** nach dem Doppelpunkt (`:`)
 - ✅ `JWT_SECRET` ist gesetzt
 - ✅ `ENCRYPTION_KEY` ist gesetzt
 - ✅ `PORT=3001`
 - ✅ `NODE_ENV=development`
+
+**⚠️ Häufiger Fehler:** Leerzeichen in DATABASE_URL
+- ❌ Falsch: `postgresql://user: password@host:5432/db`
+- ✅ Richtig: `postgresql://user:password@host:5432/db`
 
 ### Schritt 5: Datenbank-Verbindung testen
 

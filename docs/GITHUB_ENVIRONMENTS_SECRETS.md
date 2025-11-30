@@ -65,7 +65,7 @@ Diese Secrets sind nur für das `prd` Environment verfügbar:
 
 | Secret Name | Wert | Beschreibung |
 |-------------|------|--------------|
-| `DATABASE_URL` | `postgresql://sharelocal:<password>@sharelocal-postgres-dev:5432/sharelocal_dev?schema=public` | Development Database URL |
+| `DATABASE_URL` | `postgresql://sharelocal:<password>@sharelocal-postgres-dev:5432/sharelocal_dev?schema=public` | Development Database URL<br>**⚠️ WICHTIG: Kein Leerzeichen nach dem Doppelpunkt!** |
 | `JWT_SECRET` | `<generiertes-secret>` | JWT Secret (min. 32 Zeichen) |
 | `ENCRYPTION_KEY` | `<generiertes-secret>` | Encryption Key (min. 32 Zeichen) |
 | `NEXT_PUBLIC_API_URL_DEV` | `http://nuernbergspots.de/share-local/dev/api` | (Optional) Dev API URL |
@@ -81,7 +81,7 @@ Diese Secrets sind nur für das `prd` Environment verfügbar:
 
 | Secret Name | Wert | Beschreibung |
 |-------------|------|--------------|
-| `DATABASE_URL` | `postgresql://sharelocal:<password>@sharelocal-postgres-prd:5432/sharelocal?schema=public` | Production Database URL |
+| `DATABASE_URL` | `postgresql://sharelocal:<password>@sharelocal-postgres-prd:5432/sharelocal?schema=public` | Production Database URL<br>**⚠️ WICHTIG: Kein Leerzeichen nach dem Doppelpunkt!** |
 | `JWT_SECRET` | `<generiertes-secret>` | JWT Secret (min. 32 Zeichen) |
 | `ENCRYPTION_KEY` | `<generiertes-secret>` | Encryption Key (min. 32 Zeichen) |
 | `NEXT_PUBLIC_API_URL_PRD` | `https://nuernbergspots.de/share-local/prd/api` | (Optional) Prd API URL |
@@ -188,6 +188,35 @@ Wenn der Workflow das `prd` Environment verwendet:
 - Prüfe ob Job das richtige Environment verwendet
 - Prüfe ob Secrets im richtigen Environment gesetzt sind
 - Repository Secrets sind für alle Environments verfügbar
+
+### Problem: "Database connection failed" oder "PrismaClientInitializationError"
+
+**Häufige Ursache: Leerzeichen in DATABASE_URL**
+
+**Symptom:**
+```bash
+docker exec sharelocal-api-dev printenv | grep DATABASE_URL
+# DATABASE_URL=postgresql://sharelocal: password@postgres:5432/...
+#                                    ^ Leerzeichen hier!
+```
+
+**Lösung:**
+1. Gehe zu GitHub → Settings → Environments → `dev` (oder `prd`)
+2. Öffne das `DATABASE_URL` Secret
+3. Prüfe ob nach dem Doppelpunkt (`:`) ein Leerzeichen ist
+4. **Korrigiere:** `postgresql://sharelocal:password@...` (kein Leerzeichen!)
+5. Speichere das Secret
+6. Container neu starten: `docker restart sharelocal-api-dev`
+
+**Korrekte Format:**
+```
+postgresql://sharelocal:password@postgres:5432/sharelocal_dev?schema=public
+```
+
+**Falsche Format (mit Leerzeichen):**
+```
+postgresql://sharelocal: password@postgres:5432/sharelocal_dev?schema=public
+```
 
 ---
 
