@@ -73,11 +73,11 @@ COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 # This ensures all dependencies (including dotenv) are properly installed
 RUN pnpm install --frozen-lockfile --prod
 
-# Generate Prisma Client (prisma CLI is needed, install temporarily)
+# Generate Prisma Client (prisma CLI is needed, install temporarily in database package)
 # prisma generate only needs the schema, no database connection required
-RUN pnpm add -D -w prisma@^5.19.0 && \
+RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0 && \
     pnpm --filter @sharelocal/database db:generate && \
-    pnpm remove -w prisma
+    pnpm --filter @sharelocal/database remove prisma
 
 # Copy built application and shared package (if needed)
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
