@@ -284,6 +284,12 @@ jobs:
             fi
             
             echo "✅ Container $CONTAINER_NAME started successfully"
+            
+            # Cleanup: Remove unused Docker images (keep last 3)
+            echo "🧹 Cleaning up unused Docker images..."
+            docker image prune -af --filter "until=24h" || true
+            # Remove dangling images
+            docker image prune -f || true
 
   # ============================================
   # Deployment: Production (nur nach Bestätigung)
@@ -395,3 +401,9 @@ jobs:
             fi
             
             echo "✅ Container $CONTAINER_NAME started successfully"
+            
+            # Cleanup: Remove unused Docker images (keep last 3)
+            echo "🧹 Cleaning up unused Docker images..."
+            docker image prune -af --filter "until=24h" || true
+            # Remove dangling images
+            docker image prune -f || true
