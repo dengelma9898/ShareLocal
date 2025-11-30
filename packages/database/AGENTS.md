@@ -43,9 +43,32 @@ prisma/
 
 ## Dependencies
 
-- @prisma/client für Runtime
-- prisma CLI für Development
+- **@prisma/client**: Runtime-Dependency (wird von API verwendet)
+- **prisma**: CLI-Tool als devDependency (nur für Development/Build)
 - PostgreSQL 17.x mit PostGIS
+
+### ⚠️ WICHTIG: Prisma CLI Installation
+
+**Prisma CLI ist eine devDependency in diesem Package:**
+- Installiert in: `packages/database/package.json` → `devDependencies.prisma`
+- **NIEMALS** im Root installieren (`pnpm add -D -w prisma`)
+- **IMMER** Package-spezifisch installieren: `pnpm --filter @sharelocal/database add -D prisma@^5.19.0`
+
+**Für Docker Builds:**
+```dockerfile
+# Richtig: Im database Package installieren
+RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0 && \
+    pnpm --filter @sharelocal/database db:generate && \
+    pnpm --filter @sharelocal/database remove prisma
+
+# Falsch: Im Root installieren
+RUN pnpm add -D -w prisma@^5.19.0  # ❌ Verursacht workspace-root-check Fehler
+```
+
+**Prisma Client Generation:**
+- `prisma generate` benötigt **KEINE** DATABASE_URL
+- Benötigt nur das Prisma Schema (`prisma/schema.prisma`)
+- Generiert TypeScript-Types und Client-Code
 
 ## Important notes
 

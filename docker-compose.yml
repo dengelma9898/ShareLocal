@@ -50,6 +50,7 @@ services:
     restart: unless-stopped
 
   # Web Service
+  # NOTE: Port 3000 für lokale Entwicklung (CI/CD verwendet 3002/3102)
   web:
     build:
       context: .

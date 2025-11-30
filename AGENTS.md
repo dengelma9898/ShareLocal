@@ -344,8 +344,8 @@ COPY --from=builder /app/packages/api/dist ./dist
 |---------|-------------|------|----------------|
 | API | Development | **3001** | `/share-local/dev/api` |
 | API | Production | **3101** | `/share-local/prd/api` |
-| Web | Development | TBD (später) | `/share-local/dev` |
-| Web | Production | TBD (später) | `/share-local/prd` |
+| Web | Development | **3002** | `/share-local/dev` |
+| Web | Production | **3102** | `/share-local/prd` |
 
 **⚠️ WICHTIG:**
 - Diese Ports sind **fest zugewiesen** und dürfen **NICHT** geändert werden ohne:
@@ -356,10 +356,11 @@ COPY --from=builder /app/packages/api/dist ./dist
 
 **Bei Port-Änderungen müssen folgende Dateien aktualisiert werden:**
 - `.github/workflows/ci-api.yml` (deploy-dev: PORT=3001, deploy-prd: PORT=3101)
-- `.github/workflows/ci-web.yml` (wenn Web deployed wird)
-- `infrastructure/nginx/share-local-dev.conf` (API: 3001)
-- `infrastructure/nginx/share-local-prd.conf` (API: 3101)
+- `.github/workflows/ci-web.yml` (deploy-dev: PORT=3002, deploy-prd: PORT=3102)
+- `infrastructure/nginx/share-local-dev.conf` (API: 3001, Web: 3002)
+- `infrastructure/nginx/share-local-prd.conf` (API: 3101, Web: 3102)
 - `packages/api/AGENTS.md` (Port-Dokumentation)
+- `packages/web/Dockerfile` (EXPOSE Port)
 - Diese Datei (`AGENTS.md`)
 
 ---
@@ -374,4 +375,4 @@ COPY --from=builder /app/packages/api/dist ./dist
 **Maps**: OpenStreetMap + Leaflet  
 **Storage**: Scaleway Object Storage (S3-kompatibel)  
 **Lizenz**: AGPL-3.0  
-**Ports**: API Dev=3001, API Prod=3101 (siehe Port-Konfiguration oben)
+**Ports**: API Dev=3001, API Prod=3101, Web Dev=3002, Web Prod=3102 (siehe Port-Konfiguration oben)

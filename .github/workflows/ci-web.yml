@@ -177,8 +177,16 @@ jobs:
             docker stop $CONTAINER_NAME 2>/dev/null || true
             docker rm -f $CONTAINER_NAME 2>/dev/null || true
             
-            # Wait a moment to ensure container is fully removed
-            sleep 1
+            # Cleanup: Remove any containers using port 3002 (fallback)
+            docker ps -a --filter "publish=3002" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            
+            # Cleanup: Remove any old containers that might be using wrong port (3001)
+            # This handles the case where an old container was deployed with wrong port
+            docker ps -a --filter "name=sharelocal-web-dev" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            docker ps -a --filter "publish=3001" --filter "name=sharelocal-web" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            
+            # Wait a moment to ensure container is fully removed and ports are freed
+            sleep 3
             
             # Pull latest image
             docker pull $IMAGE_NAME
@@ -186,11 +194,11 @@ jobs:
             # Start container
             docker run -d \
               --name $CONTAINER_NAME \
-              -p 3001:3001 \
+              -p 3002:3002 \
               --restart unless-stopped \
               --network sharelocal-network \
               -e NODE_ENV=development \
-              -e PORT=3001 \
+              -e PORT=3002 \
               -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}" \
               -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}" \
               $IMAGE_NAME
@@ -267,8 +275,15 @@ jobs:
             docker stop $CONTAINER_NAME 2>/dev/null || true
             docker rm -f $CONTAINER_NAME 2>/dev/null || true
             
-            # Wait a moment to ensure container is fully removed
-            sleep 1
+            # Cleanup: Remove any containers using port 3102 (fallback)
+            docker ps -a --filter "publish=3102" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            
+            # Cleanup: Remove any old containers that might be using wrong port (3101)
+            docker ps -a --filter "name=sharelocal-web" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            docker ps -a --filter "publish=3101" --filter "name=sharelocal-web" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            
+            # Wait a moment to ensure container is fully removed and ports are freed
+            sleep 3
             
             # Pull latest image
             docker pull $IMAGE_NAME
@@ -276,11 +291,11 @@ jobs:
             # Start container
             docker run -d \
               --name $CONTAINER_NAME \
-              -p 3101:3101 \
+              -p 3102:3102 \
               --restart unless-stopped \
               --network sharelocal-network \
               -e NODE_ENV=production \
-              -e PORT=3101 \
+              -e PORT=3102 \
               -e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}" \
               -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}" \
               $IMAGE_NAME

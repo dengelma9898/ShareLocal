@@ -51,8 +51,9 @@ COPY --from=api-builder --chown=nodejs:nodejs /app/dist ./dist
 # Prisma Engine binaries are included in node_modules/.prisma/client
 COPY --from=api-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
-# Ensure Prisma Engine is executable (Alpine Linux requirement)
-RUN chmod +x node_modules/.prisma/client/query-engine-linux-musl* 2>/dev/null || true
+# Prisma 5.22+ verwendet .so.node Dateien statt ausführbarer Binaries
+# Die Dateien werden automatisch mit korrekten Berechtigungen kopiert durch --chown
+# Kein chmod nötig für .so.node Dateien (sie sind Shared Libraries, keine Executables)
 
 # Set user
 USER nodejs

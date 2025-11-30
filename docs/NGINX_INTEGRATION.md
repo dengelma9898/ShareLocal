@@ -19,9 +19,31 @@ Du hast bereits eine Nginx-Konfiguration mit:
 
 Füge folgende Location-Blöcke zu deiner bestehenden `nuernbergspots` Config hinzu:
 
-### Für Development (`/share-local/dev/api`)
+### Für Development (`/share-local/dev`)
 
 ```nginx
+# ShareLocal Dev Web - /share-local/dev
+location /share-local/dev {
+    rewrite ^/share-local/dev/?(.*) /$1 break;
+    proxy_pass http://localhost:3002;
+    proxy_http_version 1.1;
+    
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Prefix /share-local/dev;
+    
+    # WebSocket support (für Hot Reload in Dev)
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 60s;
+}
+
 # ShareLocal Dev API - /share-local/dev/api
 location /share-local/dev/api {
     rewrite ^/share-local/dev/api/?(.*) /api/$1 break;
@@ -56,9 +78,34 @@ location /share-local/dev/health {
 }
 ```
 
-### Für Production (`/share-local/prd/api`)
+### Für Production (`/share-local/prd`)
 
 ```nginx
+# ShareLocal Prd Web - /share-local/prd
+location /share-local/prd {
+    rewrite ^/share-local/prd/?(.*) /$1 break;
+    proxy_pass http://localhost:3102;
+    proxy_http_version 1.1;
+    
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Prefix /share-local/prd;
+    
+    proxy_connect_timeout 60s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 60s;
+    
+    # Caching für statische Assets
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        proxy_pass http://localhost:3102;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
 # ShareLocal Prd API - /share-local/prd/api
 location /share-local/prd/api {
     rewrite ^/share-local/prd/api/?(.*) /api/$1 break;
@@ -96,13 +143,16 @@ location /share-local/prd/health {
 ## Port-Struktur
 
 **Konsistent mit bestehender Struktur:**
-- Dev API: Port **3001** (analog zu anderen Apps: 3000)
-- Prd API: Port **3101** (analog zu anderen Apps: 3100)
+- Dev Web: Port **3002** (Port 3000 bereits belegt)
+- Dev API: Port **3001**
+- Prd Web: Port **3102** (Port 3100 bereits belegt)
+- Prd API: Port **3101**
 
 **Vorteile:**
 - ✅ Konsistente Port-Struktur über alle Apps hinweg
 - ✅ Separate Container für dev und prd möglich
 - ✅ Einfach zu merken: dev = 300x, prd = 310x
+- ✅ Keine Konflikte mit bestehenden Services (3000/3100)
 
 ## Schritt-für-Schritt Anleitung
 
@@ -208,8 +258,12 @@ curl https://nuernbergspots.de/share-local/prd/api/
 ### Problem: Port-Konflikt zwischen dev und prd
 
 **Gelöst:** Separate Ports:
+- Dev Web: Port 3002
 - Dev API: Port 3001
+- Prd Web: Port 3102
 - Prd API: Port 3101
+
+**Wichtig:** Ports 3000 und 3100 sind bereits von anderen Services belegt, daher verwenden wir 3002 und 3102 für Web.
 
 **Falls Probleme auftreten:**
 1. Prüfe ob beide Container laufen: `docker ps | grep sharelocal-api`
