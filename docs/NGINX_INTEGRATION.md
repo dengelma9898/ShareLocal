@@ -222,5 +222,5 @@ curl https://nuernbergspots.de/share-local/prd/api/
 
 ✅ **Empfehlung:** Füge ShareLocal-Locations zur bestehenden `nuernbergspots` Config hinzu  
 ✅ **Vorteile:** Einheitliche Struktur, SSL bereits vorhanden, einfacher zu verwalten  
-✅ **Später:** Separate Ports für dev/prd wenn nötig (3001 für dev, 3002 für prd)
+✅ **Port-Struktur:** Dev = 3001, Prd = 3101 (konsistent mit bestehender Struktur: 3000/3100)
 
