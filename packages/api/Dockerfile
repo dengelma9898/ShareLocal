@@ -14,7 +14,8 @@ COPY packages/api/package.json ./packages/api/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/database/package.json ./packages/database/
 
-# Install dependencies
+# Install dependencies (production only in final stage)
+# Note: We install all deps here for build stage, will filter in production stage
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build
@@ -53,26 +54,34 @@ ENV NODE_ENV=production
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Create non-root user
+# Create non-root user (we'll switch to it after installing dependencies)
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
-# Copy built application
+# Copy package files for production install
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=builder /app/packages/api/package.json ./packages/api/package.json
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
+
+# Copy Prisma schema (needed for Prisma generate)
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
+
+# Install production dependencies only
+# This ensures all dependencies (including dotenv) are properly installed
+RUN pnpm install --frozen-lockfile --prod
+
+# Generate Prisma Client (prisma CLI is needed, install temporarily)
+# DATABASE_URL is required for Prisma generate (can be dummy value)
+RUN pnpm add -D prisma@^5.19.0 && \
+    DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter @sharelocal/database db:generate && \
+    pnpm remove prisma
+
+# Copy built application and shared package (if needed)
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
-COPY --from=builder --chown=nodejs:nodejs /app/packages/api/package.json ./package.json
-
-# Copy node_modules and pnpm workspace structure
-# For pnpm workspaces, we need to copy the entire node_modules structure
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-
-# Copy Prisma schema (needed for Prisma Client)
-COPY --from=builder --chown=nodejs:nodejs /app/packages/database/prisma ./prisma
-# Prisma Client is already included in node_modules when we copy it above
-# In pnpm workspaces, Prisma Client is in node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client
-# The .prisma directory is inside @prisma/client, so no separate copy needed
+COPY --from=builder --chown=nodejs:nodejs /app/packages/shared/dist ./packages/shared/dist
 
 # Set user
 USER nodejs
