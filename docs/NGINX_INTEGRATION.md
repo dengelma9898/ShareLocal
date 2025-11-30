@@ -62,7 +62,7 @@ location /share-local/dev/health {
 # ShareLocal Prd API - /share-local/prd/api
 location /share-local/prd/api {
     rewrite ^/share-local/prd/api/?(.*) /api/$1 break;
-    proxy_pass http://localhost:3001;
+    proxy_pass http://localhost:3101;  # Port 3101 für Production (analog zu anderen Apps: 3100)
     proxy_http_version 1.1;
     
     proxy_set_header Host $host;
@@ -87,7 +87,7 @@ location /share-local/prd/api {
 
 # ShareLocal Prd Health Check
 location /share-local/prd/health {
-    proxy_pass http://localhost:3001/health;
+    proxy_pass http://localhost:3101/health;  # Port 3101 für Production
     proxy_http_version 1.1;
     proxy_set_header Host $host;
 }
