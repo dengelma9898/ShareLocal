@@ -46,6 +46,51 @@ sharelocal/
 
 Jedes Package hat seine eigene `AGENTS.md` mit package-spezifischen Anweisungen.
 
+### ⚠️ WICHTIG: pnpm Workspace-Struktur verstehen
+
+**Kritische Regeln für pnpm Workspaces:**
+
+1. **Jedes Package hat eigene Dependencies**: Dependencies werden in der `package.json` des jeweiligen Packages definiert
+   - `packages/api/package.json` → Dependencies für API
+   - `packages/database/package.json` → Dependencies für Database (inkl. `prisma` CLI als devDependency)
+   - `packages/shared/package.json` → Dependencies für Shared
+
+2. **Package-spezifische Befehle**: Verwende `pnpm --filter <package-name>` für Package-spezifische Operationen
+   ```bash
+   # Richtig: Prisma im database Package installieren
+   pnpm --filter @sharelocal/database add -D prisma@^5.19.0
+   
+   # Falsch: Im Root installieren (verursacht workspace-root-check Fehler)
+   pnpm add -D -w prisma@^5.19.0
+   ```
+
+3. **Docker Builds in Workspaces**:
+   - **NIEMALS** Dependencies im Root installieren (`-w` Flag vermeiden)
+   - **IMMER** `pnpm --filter <package-name>` verwenden für Package-spezifische Operationen
+   - Production-Installation: `pnpm install --frozen-lockfile --prod` installiert alle Production-Dependencies korrekt
+   - Prisma Client Generation: `prisma` CLI ist in `packages/database/package.json` als devDependency
+   - `prisma generate` benötigt **KEINE** DATABASE_URL (nur Schema)
+
+4. **Wo sind welche Tools?**
+   - `prisma` CLI: `packages/database/package.json` (devDependency)
+   - `@prisma/client`: `packages/database/package.json` (dependency) + `packages/api/package.json` (dependency)
+   - `dotenv`: `packages/api/package.json` (dependency)
+   - TypeScript: In jedem Package als devDependency
+
+5. **Docker Production Build Pattern**:
+   ```dockerfile
+   # 1. Package-Dateien kopieren
+   COPY packages/*/package.json ./packages/*/
+   
+   # 2. Production-Dependencies installieren
+   RUN pnpm install --frozen-lockfile --prod
+   
+   # 3. Tools temporär installieren (falls nötig)
+   RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0 && \
+       pnpm --filter @sharelocal/database db:generate && \
+       pnpm --filter @sharelocal/database remove prisma
+   ```
+
 ---
 
 ## Setup commands (Root)
@@ -220,6 +265,105 @@ Jedes Package hat seine eigene `AGENTS.md` Datei mit detaillierten Anweisungen:
 
 ---
 
+## Docker Builds in pnpm Workspace Monorepo
+
+### ⚠️ KRITISCH: Häufige Fehler vermeiden
+
+**1. Dependencies im falschen Package installieren:**
+```dockerfile
+# ❌ FALSCH: Im Root installieren
+RUN pnpm add -D -w prisma@^5.19.0
+
+# ✅ RICHTIG: Im entsprechenden Package installieren
+RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0
+```
+
+**2. Dummy DATABASE_URL für prisma generate:**
+```dockerfile
+# ❌ FALSCH: DATABASE_URL ist nicht nötig
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter @sharelocal/database db:generate
+
+# ✅ RICHTIG: Keine DATABASE_URL benötigt
+RUN pnpm --filter @sharelocal/database db:generate
+```
+
+**3. node_modules kopieren statt saubere Installation:**
+```dockerfile
+# ❌ FALSCH: node_modules kopieren kann zu fehlenden Dependencies führen
+COPY --from=builder /app/node_modules ./node_modules
+
+# ✅ RICHTIG: Saubere Production-Installation
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/*/package.json ./packages/*/
+RUN pnpm install --frozen-lockfile --prod
+```
+
+**4. Workspace-Struktur nicht beibehalten:**
+- Kopiere **ALLE** Package-`package.json` Dateien
+- Kopiere Root `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`
+- Führe `pnpm install` aus, um korrekte Workspace-Struktur zu erhalten
+
+### Docker Build Pattern (Production Stage)
+
+```dockerfile
+# 1. Package-Dateien kopieren (für saubere Installation)
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=builder /app/packages/*/package.json ./packages/*/
+
+# 2. Production-Dependencies installieren
+RUN pnpm install --frozen-lockfile --prod
+
+# 3. Tools temporär installieren (falls nötig, z.B. Prisma CLI)
+RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0 && \
+    pnpm --filter @sharelocal/database db:generate && \
+    pnpm --filter @sharelocal/database remove prisma
+
+# 4. Build-Artefakte kopieren
+COPY --from=builder /app/packages/api/dist ./dist
+```
+
+### Wo sind welche Dependencies?
+
+| Dependency | Package | Typ | Verwendung |
+|------------|---------|-----|------------|
+| `prisma` CLI | `packages/database` | devDependency | Prisma Client Generation |
+| `@prisma/client` | `packages/database` + `packages/api` | dependency | Runtime Database Client |
+| `dotenv` | `packages/api` | dependency | Environment Variables |
+| `express` | `packages/api` | dependency | HTTP Server |
+| TypeScript | Alle Packages | devDependency | Type Checking & Compilation |
+
+---
+
+## Port-Konfiguration (KRITISCH - NIEMALS ändern ohne Dokumentation)
+
+**Feste Port-Zuweisung für Services:**
+
+| Service | Environment | Port | NGINX Location |
+|---------|-------------|------|----------------|
+| API | Development | **3001** | `/share-local/dev/api` |
+| API | Production | **3101** | `/share-local/prd/api` |
+| Web | Development | TBD (später) | `/share-local/dev` |
+| Web | Production | TBD (später) | `/share-local/prd` |
+
+**⚠️ WICHTIG:**
+- Diese Ports sind **fest zugewiesen** und dürfen **NICHT** geändert werden ohne:
+  1. CI-Workflows zu aktualisieren (`.github/workflows/ci-*.yml`)
+  2. NGINX-Konfigurationen zu aktualisieren (`infrastructure/nginx/*.conf`)
+  3. Diese Dokumentation zu aktualisieren
+  4. Alle betroffenen Dokumentationen zu aktualisieren
+
+**Bei Port-Änderungen müssen folgende Dateien aktualisiert werden:**
+- `.github/workflows/ci-api.yml` (deploy-dev: PORT=3001, deploy-prd: PORT=3101)
+- `.github/workflows/ci-web.yml` (wenn Web deployed wird)
+- `infrastructure/nginx/share-local-dev.conf` (API: 3001)
+- `infrastructure/nginx/share-local-prd.conf` (API: 3101)
+- `packages/api/AGENTS.md` (Port-Dokumentation)
+- Diese Datei (`AGENTS.md`)
+
+---
+
 ## Quick Reference
 
 **Backend**: Node.js 24.x + Express + TypeScript + Prisma + PostgreSQL 17.x  
@@ -229,4 +373,5 @@ Jedes Package hat seine eigene `AGENTS.md` Datei mit detaillierten Anweisungen:
 **Chat**: Socket.io (MVP)  
 **Maps**: OpenStreetMap + Leaflet  
 **Storage**: Scaleway Object Storage (S3-kompatibel)  
-**Lizenz**: AGPL-3.0
+**Lizenz**: AGPL-3.0  
+**Ports**: API Dev=3001, API Prod=3101 (siehe Port-Konfiguration oben)

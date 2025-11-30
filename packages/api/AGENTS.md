@@ -34,6 +34,24 @@ Das API-Package verwendet **Ports & Adapters (Hexagonal Architecture)** für max
 - Health-Check Endpoint: `GET /health`
 - API Endpoints: `GET /api/users/:id`, `GET /api/listings`, `POST /api/listings`
 
+## ⚠️ WICHTIG: Port-Konfiguration
+
+**Feste Port-Zuweisung (NIEMALS ändern ohne Dokumentation zu aktualisieren):**
+- **Development**: Port **3001**
+- **Production**: Port **3101**
+
+**Diese Ports sind fest zugewiesen:**
+- ✅ API Dev: Port 3001 (konsistent mit NGINX-Konfiguration)
+- ✅ API Prod: Port 3101 (konsistent mit NGINX-Konfiguration)
+- ✅ NGINX-Konfiguration: `infrastructure/nginx/share-local-dev.conf` und `share-local-prd.conf`
+- ✅ CI-Workflows: `.github/workflows/ci-api.yml`
+
+**Bei Port-Änderungen müssen folgende Dateien aktualisiert werden:**
+1. `.github/workflows/ci-api.yml` (deploy-dev und deploy-prd)
+2. `infrastructure/nginx/share-local-dev.conf`
+3. `infrastructure/nginx/share-local-prd.conf`
+4. Diese Dokumentation (`packages/api/AGENTS.md`)
+
 ## Code style
 
 - TypeScript strict mode (siehe `tsconfig.json`)
@@ -136,10 +154,32 @@ pnpm test
 
 - Express.js für HTTP-Server
 - CORS für Cross-Origin Requests
-- dotenv für Environment-Variablen
-- Prisma Client für Database (via Adapter)
-- Zod für Validation (später)
-- bcryptjs für Password Hashing (später)
+- **dotenv** für Environment-Variablen (⚠️ WICHTIG: Muss in `package.json` dependencies sein, nicht nur transitive)
+- **@prisma/client** für Database (via Adapter) - wird von `@sharelocal/database` Package bereitgestellt
+- Zod für Validation
+- bcryptjs für Password Hashing
+- jsonwebtoken für JWT-Authentication
+- winston für Logging
+
+### ⚠️ WICHTIG: Docker Builds in pnpm Workspace
+
+**Kritische Regeln für Docker-Builds:**
+
+1. **Production-Installation**: Verwende `pnpm install --frozen-lockfile --prod` im Production-Stage
+   - Installiert alle Production-Dependencies korrekt (inkl. `dotenv`)
+   - Kopiere `node_modules` nicht direkt - führe eine saubere Installation durch
+
+2. **Prisma Client Generation**: 
+   - `prisma` CLI ist in `packages/database/package.json` als devDependency
+   - Installiere temporär: `pnpm --filter @sharelocal/database add -D prisma@^5.19.0`
+   - Generiere Client: `pnpm --filter @sharelocal/database db:generate`
+   - Entferne wieder: `pnpm --filter @sharelocal/database remove prisma`
+   - **KEINE** DATABASE_URL benötigt für `prisma generate`
+
+3. **Workspace-Struktur beibehalten**:
+   - Kopiere alle Package-`package.json` Dateien
+   - Kopiere Root `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`
+   - Führe `pnpm install --prod` aus, um korrekte `node_modules`-Struktur zu erhalten
 
 ## Wichtige Architektur-Regeln
 
