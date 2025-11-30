@@ -58,26 +58,13 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
-# Copy package files for production install
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder /app/packages/api/package.json ./packages/api/package.json
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
-COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
-
-# Copy Prisma schema (needed for Prisma generate)
-COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
-
-# Install production dependencies only
-# This ensures all dependencies (including dotenv) are properly installed
-RUN pnpm install --frozen-lockfile --prod
-
-# Generate Prisma Client (prisma CLI is needed, install temporarily in database package)
-# prisma generate only needs the schema, no database connection required
-RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0 && \
-    pnpm --filter @sharelocal/database db:generate && \
-    pnpm --filter @sharelocal/database remove prisma
+# Copy workspace structure and node_modules from builder
+# Builder stage already has all dependencies installed (including dotenv) and Prisma Client generated
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy built application and shared package (if needed)
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
