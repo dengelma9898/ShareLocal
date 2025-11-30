@@ -52,8 +52,9 @@ Füge diesen Location-Block hinzu (oder aktualisiere, falls bereits vorhanden):
 
 ```nginx
 # ShareLocal Dev Web - /share-local/dev
+# WICHTIG: KEIN rewrite - Next.js wurde mit basePath gebaut und erwartet den vollen Pfad
 location /share-local/dev {
-    rewrite ^/share-local/dev/?(.*) /$1 break;
+    # KEIN rewrite - Next.js bekommt den vollen Pfad /share-local/dev
     proxy_pass http://localhost:3002;
     proxy_http_version 1.1;
     
@@ -82,8 +83,9 @@ Füge diesen Location-Block hinzu (oder aktualisiere, falls bereits vorhanden):
 
 ```nginx
 # ShareLocal Prd Web - /share-local/prd
+# WICHTIG: KEIN rewrite - Next.js wurde mit basePath gebaut und erwartet den vollen Pfad
 location /share-local/prd {
-    rewrite ^/share-local/prd/?(.*) /$1 break;
+    # KEIN rewrite - Next.js bekommt den vollen Pfad /share-local/prd
     proxy_pass http://localhost:3102;
     proxy_http_version 1.1;
     
