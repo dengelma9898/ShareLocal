@@ -58,13 +58,21 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 
-# Copy workspace structure and node_modules from builder
-# Builder stage already has all dependencies installed (including dotenv) and Prisma Client generated
+# Copy package files and workspace structure
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=builder --chown=nodejs:nodejs /app/packages ./packages
+COPY --from=builder --chown=nodejs:nodejs /app/packages/api/package.json ./packages/api/package.json
+COPY --from=builder --chown=nodejs:nodejs /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder --chown=nodejs:nodejs /app/packages/database/package.json ./packages/database/package.json
+
+# Copy node_modules from builder (includes dotenv and Prisma Client)
+# Then run pnpm install --prod to fix symlinks and ensure correct structure
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Fix pnpm workspace structure and ensure all symlinks are correct
+# This ensures dotenv and other dependencies are properly accessible
+RUN pnpm install --frozen-lockfile --prod
 
 # Copy built application and shared package (if needed)
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
