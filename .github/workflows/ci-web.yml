@@ -153,9 +153,9 @@ jobs:
           file: packages/web/Dockerfile
           push: true
           tags: dengelma/sharelocal-web-dev:latest
-            build-args: |
-              NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}
-              # NEXT_PUBLIC_BASE_PATH entfernt - Next.js läuft ohne basePath
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}
+            # NEXT_PUBLIC_BASE_PATH entfernt - Next.js läuft ohne basePath
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -261,7 +261,7 @@ jobs:
           tags: dengelma/sharelocal-web-prd:latest
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}
-            NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}
+            # NEXT_PUBLIC_BASE_PATH entfernt - Next.js läuft ohne basePath
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
