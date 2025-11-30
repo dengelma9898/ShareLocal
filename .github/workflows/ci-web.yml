@@ -277,7 +277,7 @@ jobs:
           timeout: 30s
           script: |
             set -e
-            CONTAINER_NAME="sharelocal-web"
+            CONTAINER_NAME="sharelocal-web-prd"
             IMAGE_NAME="dengelma/sharelocal-web-prd:latest"
             
             # Force stop and remove existing container
@@ -288,9 +288,11 @@ jobs:
             docker ps -a --filter "publish=3102" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
             
             # Cleanup: Remove any old containers that might be using wrong port (3101)
-            # WICHTIG: Nur Container mit exaktem Namen "sharelocal-web" (nicht "sharelocal-web-dev"!)
+            # WICHTIG: Nur Container mit exaktem Namen "sharelocal-web-prd" (nicht "sharelocal-web-dev"!)
+            docker ps -a --filter "name=^sharelocal-web-prd$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            docker ps -a --filter "publish=3101" --filter "name=^sharelocal-web-prd$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
+            # Cleanup: Remove old container with name "sharelocal-web" (legacy name)
             docker ps -a --filter "name=^sharelocal-web$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
-            docker ps -a --filter "publish=3101" --filter "name=^sharelocal-web$" --format "{{.ID}}" | xargs -r docker rm -f 2>/dev/null || true
             
             # Wait a moment to ensure container is fully removed and ports are freed
             sleep 3
