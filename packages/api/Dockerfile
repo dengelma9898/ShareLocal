@@ -6,6 +6,9 @@
 FROM node:24-alpine AS api-builder
 WORKDIR /app
 
+# Install build dependencies for Prisma (needed for native binaries)
+RUN apk add --no-cache libc6-compat openssl
+
 # Copy API source
 COPY packages/api/package.json ./package.json
 COPY packages/api/src ./src
@@ -18,9 +21,9 @@ COPY packages/database/prisma ./packages/database/prisma
 # This installs dotenv, @prisma/client, express, etc. directly from package.json
 RUN npm install --legacy-peer-deps
 
-# Generate Prisma Client
+# Generate Prisma Client (with proper binary targets for Alpine)
 RUN npm install -D prisma@^5.19.0 && \
-    npx prisma generate --schema=./packages/database/prisma/schema.prisma && \
+    npx prisma generate --schema=./packages/database/prisma/schema.prisma --generator client && \
     npm uninstall prisma
 
 # Build API
@@ -32,6 +35,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install runtime dependencies for Prisma (needed for native binaries)
+RUN apk add --no-cache libc6-compat openssl
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
@@ -42,7 +48,11 @@ COPY --from=api-builder --chown=nodejs:nodejs /app/dist ./dist
 
 # Copy all node_modules (includes dotenv and all dependencies)
 # Simple copy - no workspace complexity
+# Prisma Engine binaries are included in node_modules/.prisma/client
 COPY --from=api-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Ensure Prisma Engine is executable (Alpine Linux requirement)
+RUN chmod +x node_modules/.prisma/client/query-engine-linux-musl* 2>/dev/null || true
 
 # Set user
 USER nodejs
