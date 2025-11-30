@@ -9,19 +9,45 @@ Diese Anleitung zeigt dir, wie du die deployed API testen kannst.
 ## API Zugriff
 
 **Development Environment:**
-- **URL**: `http://nuernbergspots.de:3001` (direkt) oder `http://nuernbergspots.de/share-local/dev/api` (über Nginx, falls konfiguriert)
-- **Port**: `3001`
+- **URL (über Nginx - empfohlen)**: `http://nuernbergspots.de/share-local/dev/api`
+- **URL (direkt, falls Nginx nicht konfiguriert)**: `http://nuernbergspots.de:3001`
+- **Port**: `3001` (intern)
 
 **Production Environment:**
-- **URL**: `https://nuernbergspots.de/share-local/prd/api` (über Nginx)
+- **URL (über Nginx)**: `http://nuernbergspots.de/share-local/prd/api` (später HTTPS)
 - **Port**: `3001` (intern)
+
+> **Wichtig**: Die API sollte über Nginx unter `/share-local/dev/api` erreichbar sein. Falls Nginx noch nicht konfiguriert ist, siehe Abschnitt "Nginx Setup" weiter unten.
 
 ---
 
 ## Schnelltest: Health Check
 
+### Option A: Über Nginx (empfohlen)
+
+```bash
+# Health Check über Nginx
+curl http://nuernbergspots.de/share-local/dev/health
+
+# Oder direkt API Root
+curl http://nuernbergspots.de/share-local/dev/api/
+```
+
+### Option B: Direkt über Port (falls Nginx nicht konfiguriert)
+
+```bash
+# Einfacher Health Check
+curl http://nuernbergspots.de:3001/health/live
+```
+
 ### 1. Einfacher Health Check (API läuft?)
 
+**Über Nginx:**
+```bash
+curl http://nuernbergspots.de/share-local/dev/health
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 curl http://nuernbergspots.de:3001/health/live
 ```
@@ -36,6 +62,12 @@ curl http://nuernbergspots.de:3001/health/live
 
 ### 2. Vollständiger Health Check (alle Services)
 
+**Über Nginx:**
+```bash
+curl http://nuernbergspots.de/share-local/dev/health
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 curl http://nuernbergspots.de:3001/health
 ```
@@ -57,6 +89,12 @@ curl http://nuernbergspots.de:3001/health
 
 ### 3. Readiness Check (API bereit für Requests?)
 
+**Über Nginx:**
+```bash
+curl http://nuernbergspots.de/share-local/dev/health
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 curl http://nuernbergspots.de:3001/health/ready
 ```
@@ -67,6 +105,12 @@ curl http://nuernbergspots.de:3001/health/ready
 
 ### Root Endpoint
 
+**Über Nginx:**
+```bash
+curl http://nuernbergspots.de/share-local/dev/api/
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 curl http://nuernbergspots.de:3001/
 ```
@@ -85,6 +129,18 @@ curl http://nuernbergspots.de:3001/
 
 #### User registrieren
 
+**Über Nginx:**
+```bash
+curl -X POST http://nuernbergspots.de/share-local/dev/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "test123456",
+    "name": "Test User"
+  }'
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 curl -X POST http://nuernbergspots.de:3001/api/auth/register \
   -H "Content-Type: application/json" \
@@ -110,6 +166,17 @@ curl -X POST http://nuernbergspots.de:3001/api/auth/register \
 
 #### User einloggen
 
+**Über Nginx:**
+```bash
+curl -X POST http://nuernbergspots.de/share-local/dev/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "test123456"
+  }'
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 curl -X POST http://nuernbergspots.de:3001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -207,6 +274,16 @@ curl -X POST http://nuernbergspots.de:3001/api/listings \
 
 ### Schritt 1: Health Check
 
+**Über Nginx (empfohlen):**
+```bash
+# Prüfe ob API läuft
+curl http://nuernbergspots.de/share-local/dev/health
+
+# Prüfe alle Services
+curl http://nuernbergspots.de/share-local/dev/health
+```
+
+**Direkt (falls Nginx nicht konfiguriert):**
 ```bash
 # Prüfe ob API läuft
 curl http://nuernbergspots.de:3001/health/live
@@ -217,6 +294,18 @@ curl http://nuernbergspots.de:3001/health
 
 ### Schritt 2: User registrieren
 
+**Über Nginx:**
+```bash
+curl -X POST http://nuernbergspots.de/share-local/dev/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "test123456",
+    "name": "Test User"
+  }'
+```
+
+**Direkt:**
 ```bash
 curl -X POST http://nuernbergspots.de:3001/api/auth/register \
   -H "Content-Type: application/json" \
@@ -229,6 +318,17 @@ curl -X POST http://nuernbergspots.de:3001/api/auth/register \
 
 ### Schritt 3: User einloggen (Token holen)
 
+**Über Nginx:**
+```bash
+curl -X POST http://nuernbergspots.de/share-local/dev/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "test123456"
+  }'
+```
+
+**Direkt:**
 ```bash
 curl -X POST http://nuernbergspots.de:3001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -242,6 +342,14 @@ curl -X POST http://nuernbergspots.de:3001/api/auth/login \
 
 ### Schritt 4: Protected Endpoint testen
 
+**Über Nginx:**
+```bash
+# Ersetze {dein-token} mit dem Token aus Schritt 3
+curl http://nuernbergspots.de/share-local/dev/api/users/me \
+  -H "Authorization: Bearer {dein-token}"
+```
+
+**Direkt:**
 ```bash
 # Ersetze {dein-token} mit dem Token aus Schritt 3
 curl http://nuernbergspots.de:3001/api/users/me \
@@ -250,6 +358,23 @@ curl http://nuernbergspots.de:3001/api/users/me \
 
 ### Schritt 5: Listing erstellen
 
+**Über Nginx:**
+```bash
+curl -X POST http://nuernbergspots.de/share-local/dev/api/listings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {dein-token}" \
+  -d '{
+    "title": "Test Listing",
+    "description": "Test Beschreibung",
+    "category": "TOOL",
+    "type": "OFFER",
+    "location": "Nürnberg",
+    "available": true,
+    "tags": ["test"]
+  }'
+```
+
+**Direkt:**
 ```bash
 curl -X POST http://nuernbergspots.de:3001/api/listings \
   -H "Content-Type: application/json" \
@@ -343,9 +468,59 @@ curl -X POST http://nuernbergspots.de:3001/api/listings \
 
 ---
 
+## Nginx Setup (falls noch nicht konfiguriert)
+
+Falls die API noch nicht über Nginx erreichbar ist, musst du die Nginx-Konfiguration auf dem Server installieren:
+
+### 1. Nginx-Konfiguration kopieren
+
+```bash
+ssh root@87.106.208.51
+
+# Kopiere die Dev-Konfiguration
+cp /path/to/repo/infrastructure/nginx/share-local-dev.conf /etc/nginx/sites-available/share-local-dev
+
+# Erstelle Symlink
+ln -sf /etc/nginx/sites-available/share-local-dev /etc/nginx/sites-enabled/
+
+# Teste die Konfiguration
+nginx -t
+
+# Lade Nginx neu
+systemctl reload nginx
+```
+
+### 2. Prüfe ob Nginx läuft
+
+```bash
+systemctl status nginx
+```
+
+### 3. Teste die API über Nginx
+
+```bash
+curl http://nuernbergspots.de/share-local/dev/health
+```
+
+### 4. Falls Probleme auftreten
+
+```bash
+# Prüfe Nginx-Logs
+tail -f /var/log/nginx/error.log
+
+# Prüfe ob Container läuft
+docker ps | grep sharelocal-api-dev
+
+# Prüfe ob Port 3001 erreichbar ist (lokal)
+curl http://localhost:3001/health
+```
+
+---
+
 ## Weitere Informationen
 
 - **API Dokumentation**: Siehe `packages/api/README.md`
 - **HTTP Test Dateien**: Siehe `packages/api/http/api.http` (für REST Client Extension)
 - **Protected Routes**: Siehe `packages/api/http/protected-routes.http`
+- **Nginx Konfiguration**: Siehe `infrastructure/nginx/share-local-dev.conf`
 
