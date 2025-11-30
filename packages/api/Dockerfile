@@ -60,7 +60,15 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy built application
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/packages/api/package.json ./package.json
+
+# Copy node_modules and pnpm workspace structure
+# For pnpm workspaces, we need to copy the entire node_modules structure
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nodejs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder --chown=nodejs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# Copy Prisma schema (needed for Prisma Client)
 COPY --from=builder --chown=nodejs:nodejs /app/packages/database/prisma ./prisma
 # Prisma Client is already included in node_modules when we copy it above
 # In pnpm workspaces, Prisma Client is in node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client
