@@ -6,12 +6,10 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // Base path for sub-path deployment (e.g., /share-local/dev or /share-local/prd)
-  // This will be set via NEXT_PUBLIC_BASE_PATH environment variable
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  
-  // Asset prefix for static assets
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  // KEIN basePath - NGINX entfernt Prefix mit rewrite
+  // Next.js läuft auf Root-Level, NGINX fügt /share-local/dev Prefix hinzu
+  basePath: '',
+  assetPrefix: '',
 };
 
 module.exports = nextConfig;
