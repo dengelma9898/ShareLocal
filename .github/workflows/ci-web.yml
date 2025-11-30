@@ -204,14 +204,23 @@ jobs:
               $IMAGE_NAME
             
             # Verify container is running
-            sleep 2
+            sleep 3
             if ! docker ps | grep -q $CONTAINER_NAME; then
-              echo "Error: Container $CONTAINER_NAME failed to start"
-              docker logs $CONTAINER_NAME 2>&1 || true
+              echo "❌ Error: Container $CONTAINER_NAME failed to start"
+              echo "=== Container Status (all containers) ==="
+              docker ps -a | grep sharelocal-web || echo "No sharelocal-web containers found"
+              echo ""
+              echo "=== Container Logs ==="
+              docker logs $CONTAINER_NAME --tail 50 2>&1 || echo "No logs available"
+              echo ""
+              echo "=== Check if container exists (stopped) ==="
+              docker ps -a --filter "name=$CONTAINER_NAME" --format "{{.Names}}\t{{.Status}}\t{{.Ports}}"
               exit 1
             fi
             
             echo "✅ Container $CONTAINER_NAME started successfully"
+            echo "=== Container Info ==="
+            docker ps --filter "name=$CONTAINER_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             
             # Cleanup: Remove unused Docker images
             echo "🧹 Cleaning up unused Docker images..."
@@ -301,14 +310,23 @@ jobs:
               $IMAGE_NAME
             
             # Verify container is running
-            sleep 2
+            sleep 3
             if ! docker ps | grep -q $CONTAINER_NAME; then
-              echo "Error: Container $CONTAINER_NAME failed to start"
-              docker logs $CONTAINER_NAME 2>&1 || true
+              echo "❌ Error: Container $CONTAINER_NAME failed to start"
+              echo "=== Container Status (all containers) ==="
+              docker ps -a | grep sharelocal-web || echo "No sharelocal-web containers found"
+              echo ""
+              echo "=== Container Logs ==="
+              docker logs $CONTAINER_NAME --tail 50 2>&1 || echo "No logs available"
+              echo ""
+              echo "=== Check if container exists (stopped) ==="
+              docker ps -a --filter "name=$CONTAINER_NAME" --format "{{.Names}}\t{{.Status}}\t{{.Ports}}"
               exit 1
             fi
             
             echo "✅ Container $CONTAINER_NAME started successfully"
+            echo "=== Container Info ==="
+            docker ps --filter "name=$CONTAINER_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             
             # Cleanup: Remove unused Docker images
             echo "🧹 Cleaning up unused Docker images..."

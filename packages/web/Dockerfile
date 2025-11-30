@@ -73,6 +73,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/web/.next/static ./packa
 # package.json is already included in standalone, but we copy it explicitly for reference
 COPY --from=builder --chown=nextjs:nodejs /app/packages/web/package.json ./packages/web/package.json
 
+# Verify server.js exists (for debugging)
+RUN test -f packages/web/server.js || (echo "Error: server.js not found in standalone output" && ls -la packages/web/ 2>/dev/null || echo "packages/web directory not found" && exit 1)
+
 # Set user
 USER nextjs
 
@@ -84,5 +87,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "const port = process.env.PORT || '3000'; require('http').get(`http://localhost:${port}/health`, (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start application
+# Next.js standalone output structure: packages/web/server.js
 CMD ["node", "packages/web/server.js"]
 
