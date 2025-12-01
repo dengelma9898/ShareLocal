@@ -27,8 +27,8 @@ ssh root@87.106.208.51
 # Prüfe ob Container läuft
 docker ps | grep sharelocal-api-dev
 
-# Migrationen manuell ausführen
-docker exec sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prisma migrate deploy --schema=./packages/database/prisma/schema.prisma"
+# Migrationen manuell ausführen (als root, da Container als nodejs User läuft)
+docker exec --user root sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prisma migrate deploy --schema=./packages/database/prisma/schema.prisma"
 ```
 
 ## Schritt 3: Prüfe Migration-Status
@@ -91,8 +91,8 @@ docker rm sharelocal-api-dev
 # Migration-Status prüfen
 docker exec sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prisma migrate status --schema=./packages/database/prisma/schema.prisma"
 
-# Falls Migrationen als "rolled_back" markiert sind, neu ausführen
-docker exec sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prisma migrate resolve --applied <migration_name> --schema=./packages/database/prisma/schema.prisma"
+# Falls Migrationen als "rolled_back" markiert sind, neu ausführen (als root)
+docker exec --user root sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prisma migrate resolve --applied <migration_name> --schema=./packages/database/prisma/schema.prisma"
 ```
 
 ### Problem 4: Migration-Dateien fehlen im Container
@@ -102,7 +102,7 @@ docker exec sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prism
 **Lösung:**
 1. Prüfe ob Migration-Dateien im Container vorhanden sind:
    ```bash
-   docker exec sharelocal-api-dev ls -la packages/database/prisma/migrations/
+   docker exec --user root sharelocal-api-dev ls -la packages/database/prisma/migrations/
    ```
 
 2. Falls nicht vorhanden, Container neu bauen (Dockerfile wurde aktualisiert)
