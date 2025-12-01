@@ -200,20 +200,6 @@ jobs:
             # Run database migrations (wie Flyway - automatisch vor Deployment)
             # Container verwendet npm, nicht pnpm - daher npx prisma migrate deploy direkt
             echo "🔄 Running database migrations..."
-            
-            # Prüfe ob Migration-Dateien im Container vorhanden sind
-            echo "📋 Checking migration files in container..."
-            docker run --rm \
-              --network sharelocal-network \
-              --user root \
-              $IMAGE_NAME \
-              sh -c "ls -la packages/database/prisma/migrations/ 2>&1 || echo '⚠️ Migration files not found'" || {
-                echo "❌ Cannot check migration files - container might be broken"
-                exit 1
-              }
-            
-            # Migrationen ausführen
-            echo "🚀 Executing migrations..."
             docker run --rm \
               --network sharelocal-network \
               --user root \
@@ -231,20 +217,6 @@ jobs:
                 exit 1
               }
             echo "✅ Migrations completed"
-            
-            # Verifiziere dass Tabellen erstellt wurden
-            echo "🔍 Verifying tables were created..."
-            docker run --rm \
-              --network sharelocal-network \
-              postgres:17 \
-              psql -h sharelocal-postgres-dev -U sharelocal -d sharelocal_dev -c "\dt" 2>&1 | grep -E "(users|listings|conversations|messages|conversation_participants)" || {
-                echo "⚠️ Warning: Some tables might be missing. Checking migration history..."
-                docker run --rm \
-                  --network sharelocal-network \
-                  postgres:17 \
-                  psql -h sharelocal-postgres-dev -U sharelocal -d sharelocal_dev -c "SELECT migration_name, finished_at, success FROM _prisma_migrations ORDER BY finished_at DESC LIMIT 5;" 2>&1 || true
-                echo "❌ Tables verification failed - deployment will continue but tables might be missing"
-              }
             
             # Start container
             docker run -d \
@@ -338,20 +310,6 @@ jobs:
             # Run database migrations (wie Flyway - automatisch vor Deployment)
             # Container verwendet npm, nicht pnpm - daher npx prisma migrate deploy direkt
             echo "🔄 Running database migrations..."
-            
-            # Prüfe ob Migration-Dateien im Container vorhanden sind
-            echo "📋 Checking migration files in container..."
-            docker run --rm \
-              --network sharelocal-network \
-              --user root \
-              $IMAGE_NAME \
-              sh -c "ls -la packages/database/prisma/migrations/ 2>&1 || echo '⚠️ Migration files not found'" || {
-                echo "❌ Cannot check migration files - container might be broken"
-                exit 1
-              }
-            
-            # Migrationen ausführen
-            echo "🚀 Executing migrations..."
             docker run --rm \
               --network sharelocal-network \
               --user root \
@@ -369,20 +327,6 @@ jobs:
                 exit 1
               }
             echo "✅ Migrations completed"
-            
-            # Verifiziere dass Tabellen erstellt wurden
-            echo "🔍 Verifying tables were created..."
-            docker run --rm \
-              --network sharelocal-network \
-              postgres:17 \
-              psql -h sharelocal-postgres-prd -U sharelocal -d sharelocal -c "\dt" 2>&1 | grep -E "(users|listings|conversations|messages|conversation_participants)" || {
-                echo "⚠️ Warning: Some tables might be missing. Checking migration history..."
-                docker run --rm \
-                  --network sharelocal-network \
-                  postgres:17 \
-                  psql -h sharelocal-postgres-prd -U sharelocal -d sharelocal -c "SELECT migration_name, finished_at, success FROM _prisma_migrations ORDER BY finished_at DESC LIMIT 5;" 2>&1 || true
-                echo "❌ Tables verification failed - deployment will continue but tables might be missing"
-              }
             
             # Start container
             docker run -d \
