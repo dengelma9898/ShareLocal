@@ -14,7 +14,7 @@ COPY packages/api/package.json ./package.json
 COPY packages/api/src ./src
 COPY packages/api/tsconfig.json ./tsconfig.json
 
-# Copy Prisma schema for client generation
+# Copy Prisma schema and migrations for migration execution
 COPY packages/database/prisma ./packages/database/prisma
 
 # Install ALL dependencies with npm (standalone)
@@ -45,6 +45,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy package.json and built application
 COPY --from=api-builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=api-builder --chown=nodejs:nodejs /app/dist ./dist
+# Copy Prisma schema and migrations for migration execution
+COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma ./packages/database/prisma
 
 # Copy all node_modules (includes dotenv and all dependencies)
 # Simple copy - no workspace complexity
