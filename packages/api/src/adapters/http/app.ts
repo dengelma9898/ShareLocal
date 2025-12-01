@@ -44,6 +44,11 @@ export interface AppDependencies {
 export function createApp(dependencies: AppDependencies): Express {
   const app = express();
 
+  // Trust Proxy: Wichtig für Rate Limiting hinter NGINX/Reverse Proxy
+  // Erlaubt Express, X-Forwarded-For Header zu vertrauen (von NGINX gesetzt)
+  // Siehe: https://expressjs.com/en/guide/behind-proxies.html
+  app.set('trust proxy', true);
+
   // Security Middleware
   // Helmet.js setzt verschiedene Security Headers zum Schutz gegen XSS, Clickjacking, etc.
   // Siehe README für Details, warum wir Helmet.js verwenden
