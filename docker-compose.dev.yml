@@ -21,6 +21,9 @@ services:
   web:
     build:
       target: builder
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+        NEXT_PUBLIC_BASE_PATH: /share-local/dev
     command: pnpm --filter @sharelocal/web dev
     volumes:
       - ./packages/web:/app/packages/web

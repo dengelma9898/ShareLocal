@@ -43,9 +43,9 @@ RUN pnpm --filter @sharelocal/shared build
 
 # Set build-time environment variables
 ARG NEXT_PUBLIC_API_URL
-# NEXT_PUBLIC_BASE_PATH nicht mehr benötigt - Next.js läuft ohne basePath
+ARG NEXT_PUBLIC_BASE_PATH
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NEXT_PUBLIC_BASE_PATH=""
+ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
 
 # Build Next.js application
 RUN pnpm --filter @sharelocal/web build

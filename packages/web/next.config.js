@@ -6,10 +6,9 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // KEIN basePath - NGINX entfernt Prefix mit rewrite
-  // Next.js läuft auf Root-Level, NGINX fügt /share-local/dev Prefix hinzu
-  basePath: '',
-  assetPrefix: '',
+  // Konfiguration für Sub-Path Deployment (z.B. /share-local/dev)
+  // Wird zur Build-Zeit über NEXT_PUBLIC_BASE_PATH gesetzt
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
 };
 
 module.exports = nextConfig;
