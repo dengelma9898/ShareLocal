@@ -68,7 +68,7 @@ Diese Secrets sind nur für das `prd` Environment verfügbar:
 | `DATABASE_URL` | `postgresql://sharelocal:<password>@sharelocal-postgres-dev:5432/sharelocal_dev?schema=public` | Development Database URL<br>**⚠️ WICHTIG: Kein Leerzeichen nach dem Doppelpunkt!** |
 | `JWT_SECRET` | `<generiertes-secret>` | JWT Secret (min. 32 Zeichen) |
 | `ENCRYPTION_KEY` | `<generiertes-secret>` | Encryption Key (min. 32 Zeichen) |
-| `NEXT_PUBLIC_API_URL_DEV` | `http://nuernbergspots.de/share-local/dev/api` | (Optional) Dev API URL |
+| `NEXT_PUBLIC_API_URL_DEV` | `https://nuernbergspots.de/share-local/dev` | (Optional) Dev API URL (ohne /api, wird automatisch hinzugefügt) |
 | `NEXT_PUBLIC_BASE_PATH_DEV` | `/share-local/dev` | (Optional) Dev Base Path |
 
 ### 2.2 Prd Environment Secrets
@@ -84,7 +84,7 @@ Diese Secrets sind nur für das `prd` Environment verfügbar:
 | `DATABASE_URL` | `postgresql://sharelocal:<password>@sharelocal-postgres-prd:5432/sharelocal?schema=public` | Production Database URL<br>**⚠️ WICHTIG: Kein Leerzeichen nach dem Doppelpunkt!** |
 | `JWT_SECRET` | `<generiertes-secret>` | JWT Secret (min. 32 Zeichen) |
 | `ENCRYPTION_KEY` | `<generiertes-secret>` | Encryption Key (min. 32 Zeichen) |
-| `NEXT_PUBLIC_API_URL_PRD` | `https://nuernbergspots.de/share-local/prd/api` | (Optional) Prd API URL |
+| `NEXT_PUBLIC_API_URL_PRD` | `https://nuernbergspots.de/share-local/prd` | (Optional) Prd API URL (ohne /api, wird automatisch hinzugefügt) |
 | `NEXT_PUBLIC_BASE_PATH_PRD` | `/share-local/prd` | (Optional) Prd Base Path |
 
 ---

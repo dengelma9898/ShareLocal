@@ -11,7 +11,7 @@
 docker exec sharelocal-web-dev printenv | grep -E "NEXT_PUBLIC|BASE_PATH|PORT"
 
 # Erwartete Ausgabe:
-# NEXT_PUBLIC_API_URL=http://nuernbergspots.de/share-local/dev/api
+# NEXT_PUBLIC_API_URL=https://nuernbergspots.de/share-local/dev
 # NEXT_PUBLIC_BASE_PATH=/share-local/dev
 # PORT=3002
 ```
@@ -73,7 +73,7 @@ docker logs sharelocal-web-dev --tail 10
 
 ```yaml
 build-args: |
-  NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}
+  NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'https://nuernbergspots.de/share-local/dev' }}
   NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}
 ```
 

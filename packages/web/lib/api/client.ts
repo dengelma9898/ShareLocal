@@ -3,12 +3,18 @@
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API Base URL - sollte die Base-URL ohne /api sein
+// z.B. https://nuernbergspots.de/share-local/dev (nicht mit /api am Ende)
+// client.ts fügt automatisch /api hinzu
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Entferne trailing slash und /api falls vorhanden (für Robustheit)
+const cleanApiUrl = API_BASE_URL.replace(/\/+$/, '').replace(/\/api\/?$/, '');
 
 // Axios Instance erstellen
 // baseURL enthält bereits /api, daher beginnen alle Routes direkt mit /listings, /auth, etc.
 const apiClient: AxiosInstance = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: `${cleanApiUrl}/api`,
   headers: {
     'Content-Type': 'application/json',
   },

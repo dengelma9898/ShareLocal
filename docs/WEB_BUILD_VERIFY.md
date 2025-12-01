@@ -11,11 +11,11 @@ Dieses Dokument beschreibt, was für den Web Build benötigt wird und wie man ih
 ### 1. GitHub Secrets
 
 **Dev Environment:**
-- `NEXT_PUBLIC_API_URL_DEV` (optional, Default: `http://nuernbergspots.de/share-local/dev/api`)
+- `NEXT_PUBLIC_API_URL_DEV` (optional, Default: `https://nuernbergspots.de/share-local/dev`) - **⚠️ WICHTIG:** Ohne `/api`, wird automatisch hinzugefügt
 - `NEXT_PUBLIC_BASE_PATH_DEV` (optional, Default: `/share-local/dev`)
 
 **Prd Environment:**
-- `NEXT_PUBLIC_API_URL_PRD` (optional, Default: `https://nuernbergspots.de/share-local/prd/api`)
+- `NEXT_PUBLIC_API_URL_PRD` (optional, Default: `https://nuernbergspots.de/share-local/prd`) - **⚠️ WICHTIG:** Ohne `/api`, wird automatisch hinzugefügt
 - `NEXT_PUBLIC_BASE_PATH_PRD` (optional, Default: `/share-local/prd`)
 
 ### 2. Port-Konfiguration
@@ -93,7 +93,7 @@ Dieses Dokument beschreibt, was für den Web Build benötigt wird und wie man ih
 - [ ] **Image erfolgreich gebaut**
   ```bash
   docker build -f packages/web/Dockerfile \
-    --build-arg NEXT_PUBLIC_API_URL=http://nuernbergspots.de/share-local/dev/api \
+    --build-arg NEXT_PUBLIC_API_URL=https://nuernbergspots.de/share-local/dev \
     --build-arg NEXT_PUBLIC_BASE_PATH=/share-local/dev \
     -t sharelocal-web-dev:test .
   ```
@@ -105,7 +105,7 @@ Dieses Dokument beschreibt, was für den Web Build benötigt wird und wie man ih
     -p 3002:3002 \
     -e NODE_ENV=development \
     -e PORT=3002 \
-    -e NEXT_PUBLIC_API_URL=http://nuernbergspots.de/share-local/dev/api \
+    -e NEXT_PUBLIC_API_URL=https://nuernbergspots.de/share-local/dev \
     -e NEXT_PUBLIC_BASE_PATH=/share-local/dev \
     sharelocal-web-dev:test
   ```

@@ -15,7 +15,7 @@ Dieses Dokument verifiziert alle Environment-Variablen für Web und API in CI/CD
 **Build-Args (beim Build gesetzt):**
 ```yaml
 build-args: |
-  NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}
+  NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'https://nuernbergspots.de/share-local/dev' }}
   NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}
 ```
 
@@ -23,9 +23,11 @@ build-args: |
 ```bash
 -e NODE_ENV=development
 -e PORT=3002
--e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'http://nuernbergspots.de/share-local/dev/api' }}"
+-e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_DEV || 'https://nuernbergspots.de/share-local/dev' }}"
 -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_DEV || '/share-local/dev' }}"
 ```
+
+**⚠️ WICHTIG:** `NEXT_PUBLIC_API_URL` sollte die Base-URL **ohne** `/api` sein. `client.ts` fügt automatisch `/api` hinzu.
 
 **Status:** ✅ Korrekt
 
@@ -38,7 +40,7 @@ build-args: |
 **Build-Args (beim Build gesetzt):**
 ```yaml
 build-args: |
-  NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}
+  NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd' }}
   NEXT_PUBLIC_BASE_PATH=${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}
 ```
 
@@ -46,9 +48,11 @@ build-args: |
 ```bash
 -e NODE_ENV=production
 -e PORT=3102
--e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd/api' }}"
+-e NEXT_PUBLIC_API_URL="${{ secrets.NEXT_PUBLIC_API_URL_PRD || 'https://nuernbergspots.de/share-local/prd' }}"
 -e NEXT_PUBLIC_BASE_PATH="${{ secrets.NEXT_PUBLIC_BASE_PATH_PRD || '/share-local/prd' }}"
 ```
+
+**⚠️ WICHTIG:** `NEXT_PUBLIC_API_URL` sollte die Base-URL **ohne** `/api` sein. `client.ts` fügt automatisch `/api` hinzu.
 
 **Status:** ✅ Korrekt
 
@@ -104,15 +108,15 @@ web:
 
 **Web Service:**
 ```yaml
-web:
-  build:
-    args:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd/api}
+  web:
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd}
+        NEXT_PUBLIC_BASE_PATH: /share-local/prd  # ✅ Korrekt
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd}
       NEXT_PUBLIC_BASE_PATH: /share-local/prd  # ✅ Korrekt
-  environment:
-    NODE_ENV: production
-    NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd/api}
-    NEXT_PUBLIC_BASE_PATH: /share-local/prd  # ✅ Korrekt
 ```
 
 **Status:** ✅ Korrekt

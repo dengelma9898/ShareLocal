@@ -12,10 +12,10 @@ services:
   web:
     build:
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd}
         NEXT_PUBLIC_BASE_PATH: /share-local/prd
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nuernbergspots.de/share-local/prd}
       NEXT_PUBLIC_BASE_PATH: /share-local/prd
 
