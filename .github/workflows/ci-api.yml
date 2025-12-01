@@ -197,6 +197,18 @@ jobs:
             # Pull latest image
             docker pull $IMAGE_NAME
             
+            # Run database migrations (wie Flyway - automatisch vor Deployment)
+            echo "🔄 Running database migrations..."
+            docker run --rm \
+              --network sharelocal-network \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              $IMAGE_NAME \
+              pnpm --filter @sharelocal/database db:migrate:deploy || {
+                echo "❌ Migration failed"
+                exit 1
+              }
+            echo "✅ Migrations completed"
+            
             # Start container
             docker run -d \
               --name $CONTAINER_NAME \
@@ -285,6 +297,18 @@ jobs:
             
             # Pull latest image
             docker pull $IMAGE_NAME
+            
+            # Run database migrations (wie Flyway - automatisch vor Deployment)
+            echo "🔄 Running database migrations..."
+            docker run --rm \
+              --network sharelocal-network \
+              -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+              $IMAGE_NAME \
+              pnpm --filter @sharelocal/database db:migrate:deploy || {
+                echo "❌ Migration failed"
+                exit 1
+              }
+            echo "✅ Migrations completed"
             
             # Start container
             docker run -d \
