@@ -27,8 +27,12 @@ ssh root@87.106.208.51
 # Prüfe ob Container läuft
 docker ps | grep sharelocal-api-dev
 
-# Migrationen manuell ausführen (als root, da Container als nodejs User läuft)
+# Migrationen manuell ausführen
+# Option 1: Als root (einfacher)
 docker exec --user root sharelocal-api-dev sh -c "npm install -g prisma@^5.19.0 && npx prisma migrate deploy --schema=./packages/database/prisma/schema.prisma"
+
+# Option 2: Lokal installieren (ohne root, aber langsamer)
+docker exec sharelocal-api-dev sh -c "cd /app && npm install prisma@^5.19.0 && npx prisma migrate deploy --schema=./packages/database/prisma/schema.prisma"
 ```
 
 ## Schritt 3: Prüfe Migration-Status
