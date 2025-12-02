@@ -308,34 +308,56 @@ export async function setupApiMocks(page: Page) {
     });
   });
 
-  // Mock: Get Conversations
-  // Very generic pattern: matches ANY URL containing /api/conversations
-  await page.route('**/api/conversations**', async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({
-        data: [],
-      }),
-    });
-  });
+  // Mock: Conversations API
+  // Store for mock conversations and messages
+  const mockConversations: any[] = [];
+  const mockMessages: Record<string, any[]> = {};
 
-  // Mock: Create Conversation
-  // Very generic pattern: matches ANY URL containing /api/conversations
   await page.route('**/api/conversations**', async (route: Route) => {
-    if (route.request().method() === 'POST') {
+    const url = route.request().url();
+    const method = route.request().method();
+
+    // GET /api/conversations - Get all conversations
+    if (method === 'GET' && !url.includes('/messages')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          data: mockConversations,
+        }),
+      });
+      return;
+    }
+
+    // POST /api/conversations - Create conversation
+    if (method === 'POST' && !url.includes('/messages')) {
       const request = route.request();
       const postData = request.postDataJSON();
       
       const mockConversation = {
         id: `mock-conversation-${Date.now()}`,
-        listingId: postData.listingId,
+        listingId: postData.listingId || null,
+        participants: [
+          { id: 'mock-user-123', name: 'Mock User', email: 'mock@example.com' },
+          { id: 'mock-owner-456', name: 'Listing Owner', email: 'owner@example.com' },
+        ],
+        listing: postData.listingId ? {
+          id: postData.listingId,
+          title: 'Mock Listing',
+          category: 'TOOL',
+          type: 'OFFER',
+        } : null,
+        lastMessage: null,
+        unreadCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+
+      mockConversations.push(mockConversation);
+      mockMessages[mockConversation.id] = [];
       
       await route.fulfill({
         status: 201,
@@ -347,9 +369,67 @@ export async function setupApiMocks(page: Page) {
           data: mockConversation,
         }),
       });
-    } else {
-      await route.continue();
+      return;
     }
+
+    // GET /api/conversations/:id/messages - Get messages
+    if (method === 'GET' && url.includes('/messages')) {
+      const conversationId = url.match(/\/conversations\/([^/]+)\/messages/)?.[1];
+      const messages = conversationId ? (mockMessages[conversationId] || []) : [];
+      
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          data: messages,
+        }),
+      });
+      return;
+    }
+
+    // POST /api/conversations/:id/messages - Send message
+    if (method === 'POST' && url.includes('/messages')) {
+      const conversationId = url.match(/\/conversations\/([^/]+)\/messages/)?.[1];
+      const request = route.request();
+      const postData = request.postDataJSON();
+      
+      if (conversationId) {
+        const mockMessage = {
+          id: `mock-message-${Date.now()}`,
+          conversationId,
+          sender: {
+            id: 'mock-user-123',
+            name: 'Mock User',
+            email: 'mock@example.com',
+          },
+          content: postData.content,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (!mockMessages[conversationId]) {
+          mockMessages[conversationId] = [];
+        }
+        mockMessages[conversationId].push(mockMessage);
+        
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+          },
+          body: JSON.stringify({
+            data: mockMessage,
+          }),
+        });
+        return;
+      }
+    }
+
+    await route.continue();
   });
 }
 
