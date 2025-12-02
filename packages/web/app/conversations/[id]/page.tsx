@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Send, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -46,17 +46,19 @@ export default function ConversationDetailPage() {
 
   const conversation = conversationsData?.data.find((c) => c.id === conversationId);
 
-  // Fetch messages
+  // Fetch messages (no automatic polling - manual refresh only for MVP)
   const {
     data: messagesData,
     isLoading: isLoadingMessages,
     isError: isErrorMessages,
     error: messagesError,
+    refetch: refetchMessages,
+    isRefetching: isRefetchingMessages,
   } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => getMessages(conversationId, 100, 0),
     enabled: isAuthenticated && !!conversationId,
-    refetchInterval: 5000, // Poll every 5 seconds for new messages
+    // No refetchInterval - manual refresh only (WebSocket will be added later)
   });
 
   const messages = messagesData?.data || [];
@@ -138,26 +140,37 @@ const initials = otherParticipant?.name
   return (
     <div className="container max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="mb-6 flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/conversations">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={otherParticipant?.avatar || undefined} alt={otherParticipant?.name || 'User'} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h1 className="text-xl font-semibold">{otherParticipant?.name || 'Unbekannt'}</h1>
-            {conversation.listing && (
-              <Badge variant="outline" className="text-xs mt-1">
-                {conversation.listing.type === 'OFFER' ? 'Angebot' : 'Gesuch'}: {conversation.listing.title}
-              </Badge>
-            )}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/conversations">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={otherParticipant?.avatar || undefined} alt={otherParticipant?.name || 'User'} />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-xl font-semibold">{otherParticipant?.name || 'Unbekannt'}</h1>
+              {conversation.listing && (
+                <Badge variant="outline" className="text-xs mt-1">
+                  {conversation.listing.type === 'OFFER' ? 'Angebot' : 'Gesuch'}: {conversation.listing.title}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => refetchMessages()}
+          disabled={isRefetchingMessages}
+          title="Nachrichten aktualisieren"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefetchingMessages ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {/* Messages */}

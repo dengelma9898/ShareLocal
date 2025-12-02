@@ -75,11 +75,12 @@ function MessagesPageContent() {
       return;
     }
 
-    // Create conversation with target user
-    if (user?.id) {
+    // Only create conversation if mutation hasn't been called yet and user is available
+    if (user?.id && !createConversationMutation.isPending && !createConversationMutation.isSuccess) {
       createConversationMutation.mutate([user.id, targetUserId]);
     }
-  }, [authLoading, isAuthenticated, user, targetUserId, router, toast, createConversationMutation, queryClient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, isAuthenticated, user?.id, targetUserId]);
 
   // Show loading state
   return (
