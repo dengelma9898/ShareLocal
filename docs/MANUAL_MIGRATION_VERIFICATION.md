@@ -18,11 +18,14 @@ docker exec --user root sharelocal-api-dev ls -la packages/database/prisma/migra
 
 **Erwartete Ausgabe:**
 ```
-drwxr-xr-x    4 root     root           128 Dec  1 21:00 .
-drwxr-xr-x    3 root     root            96 Dec  1 21:00 ..
-drwxr-xr-x    3 root     root            96 Dec  1 21:00 20251125212522_init
--rw-r--r--    1 root     root           126 Dec  1 21:00 migration_lock.toml
+total 16
+drwxr-xr-x    3 nodejs   nodejs        4096 Dec  2 04:33 .
+drwxr-xr-x    1 nodejs   nodejs        4096 Dec  2 04:34 ..
+drwxr-xr-x    2 nodejs   nodejs        4096 Dec  2 04:33 20251125212522_init
+-rw-r--r--    1 nodejs   nodejs         126 Dec  2 04:33 migration_lock.toml
 ```
+
+**✅ Erfolgreich:** Migration-Dateien sind im Container vorhanden!
 
 **Wenn fehlend:**
 - ❌ Docker Image wurde ohne Migration-Dateien gebaut
