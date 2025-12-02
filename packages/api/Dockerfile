@@ -16,9 +16,9 @@ COPY packages/api/tsconfig.json ./tsconfig.json
 
 # Copy Prisma schema and migrations for migration execution
 # WICHTIG: Kopiere migrations/ explizit, damit Migration-Dateien nicht fehlen
+# migration_lock.toml liegt IN migrations/, wird also automatisch mitkopiert
 COPY packages/database/prisma/schema.prisma ./packages/database/prisma/
 COPY packages/database/prisma/migrations ./packages/database/prisma/migrations
-COPY packages/database/prisma/migration_lock.toml ./packages/database/prisma/
 
 # Debug: Prüfe ob Migration-Dateien kopiert wurden
 RUN ls -la ./packages/database/prisma/migrations/ || echo "⚠️ WARNING: Migration files not found in builder stage"
@@ -53,9 +53,9 @@ COPY --from=api-builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=api-builder --chown=nodejs:nodejs /app/dist ./dist
 # Copy Prisma schema and migrations for migration execution
 # WICHTIG: Kopiere migrations/ explizit aus Builder-Stage
+# migration_lock.toml liegt IN migrations/, wird also automatisch mitkopiert
 COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma/schema.prisma ./packages/database/prisma/
 COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma/migrations ./packages/database/prisma/migrations
-COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma/migration_lock.toml ./packages/database/prisma/
 
 # Debug: Prüfe ob Migration-Dateien im Production-Stage vorhanden sind (als root vor USER-Switch)
 RUN ls -la ./packages/database/prisma/migrations/ || echo "⚠️ WARNING: Migration files not found in production stage"
