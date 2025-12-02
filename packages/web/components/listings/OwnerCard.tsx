@@ -13,10 +13,9 @@ import Link from 'next/link';
 
 interface OwnerCardProps {
   owner: User;
-  showContactButton?: boolean;
 }
 
-export function OwnerCard({ owner, showContactButton = true }: OwnerCardProps) {
+export function OwnerCard({ owner }: OwnerCardProps) {
   const initials = owner.name
     ?.split(' ')
     .map((n: string) => n[0])
@@ -72,13 +71,6 @@ export function OwnerCard({ owner, showContactButton = true }: OwnerCardProps) {
           <Badge variant="outline" className="w-fit">
             ✓ Verifiziert
           </Badge>
-        )}
-
-        {/* Contact Button */}
-        {showContactButton && (
-          <Button asChild className="w-full">
-            <Link href={`/messages?user=${owner.id}`}>Nachricht senden</Link>
-          </Button>
         )}
 
         {/* View Profile Link */}

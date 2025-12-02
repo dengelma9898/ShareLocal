@@ -322,7 +322,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
         <div className="space-y-6">
           {/* Owner Card */}
           {listing.owner ? (
-            <OwnerCard owner={listing.owner} showContactButton={true} />
+            <OwnerCard owner={listing.owner} />
           ) : (
             <Card>
               <CardContent className="pt-6">
