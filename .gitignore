@@ -63,7 +63,8 @@ packages/mobile/.android/
 *.iws
 
 # Prisma
-packages/database/prisma/migrations/
+# WICHTIG: Migration-Dateien NICHT ignorieren - sie müssen versioniert werden!
+# packages/database/prisma/migrations/  # AUSKOMMENTIERT: Migrationen müssen im Repo sein
 
 # Playwright
 test-results/
