@@ -15,7 +15,13 @@ COPY packages/api/src ./src
 COPY packages/api/tsconfig.json ./tsconfig.json
 
 # Copy Prisma schema and migrations for migration execution
-COPY packages/database/prisma ./packages/database/prisma
+# WICHTIG: Kopiere migrations/ explizit, damit Migration-Dateien nicht fehlen
+COPY packages/database/prisma/schema.prisma ./packages/database/prisma/
+COPY packages/database/prisma/migrations ./packages/database/prisma/migrations
+COPY packages/database/prisma/migration_lock.toml ./packages/database/prisma/
+
+# Debug: Prüfe ob Migration-Dateien kopiert wurden
+RUN ls -la ./packages/database/prisma/migrations/ || echo "⚠️ WARNING: Migration files not found in builder stage"
 
 # Install ALL dependencies with npm (standalone)
 # This installs dotenv, @prisma/client, express, etc. directly from package.json
@@ -46,7 +52,13 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=api-builder --chown=nodejs:nodejs /app/package.json ./package.json
 COPY --from=api-builder --chown=nodejs:nodejs /app/dist ./dist
 # Copy Prisma schema and migrations for migration execution
-COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma ./packages/database/prisma
+# WICHTIG: Kopiere migrations/ explizit aus Builder-Stage
+COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma/schema.prisma ./packages/database/prisma/
+COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma/migrations ./packages/database/prisma/migrations
+COPY --from=api-builder --chown=nodejs:nodejs /app/packages/database/prisma/migration_lock.toml ./packages/database/prisma/
+
+# Debug: Prüfe ob Migration-Dateien im Production-Stage vorhanden sind (als root vor USER-Switch)
+RUN ls -la ./packages/database/prisma/migrations/ || echo "⚠️ WARNING: Migration files not found in production stage"
 
 # Copy all node_modules (includes dotenv and all dependencies)
 # Simple copy - no workspace complexity
