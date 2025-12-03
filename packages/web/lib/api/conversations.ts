@@ -14,6 +14,7 @@ export interface Conversation {
     title: string;
     category: string;
     type: 'OFFER' | 'REQUEST';
+    userId: string; // Owner ID - needed to determine if it's my offer or my interest
   } | null;
   lastMessage?: {
     id: string;
