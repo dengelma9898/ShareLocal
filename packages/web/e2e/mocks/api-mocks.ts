@@ -310,7 +310,27 @@ export async function setupApiMocks(page: Page) {
 
   // Mock: Conversations API
   // Store for mock conversations and messages
-  const mockConversations: any[] = [];
+  const mockConversations: any[] = [
+    {
+      id: 'mock-conversation-1',
+      listingId: null,
+      participants: [
+        { id: 'mock-user-123', name: 'Mock User', email: 'mock@example.com' },
+        { id: 'mock-owner-456', name: 'Listing Owner', email: 'owner@example.com' },
+      ],
+      listing: null,
+      lastMessage: {
+        id: 'mock-message-1',
+        content: 'Test message',
+        senderId: 'mock-owner-456',
+        createdAt: new Date().toISOString(),
+        read: false,
+      },
+      unreadCount: 2, // Simulate unread messages
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
   const mockMessages: Record<string, any[]> = {};
 
   await page.route('**/api/conversations**', async (route: Route) => {

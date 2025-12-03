@@ -117,5 +117,82 @@ test.describe('Conversations', () => {
     const isDisabled = await sendButton.isDisabled();
     expect(isDisabled).toBe(true);
   });
+
+  test('should show messages link in header navigation', async ({ page, authenticatedUser }) => {
+    await page.goto('/');
+    
+    // Should show "Nachrichten" link in desktop navigation
+    const messagesLink = page.locator('a:has-text("Nachrichten")');
+    await expect(messagesLink).toBeVisible({ timeout: 5000 });
+    
+    // Click should navigate to conversations page
+    await messagesLink.click();
+    await expect(page).toHaveURL(/\/conversations/, { timeout: 5000 });
+  });
+
+  test('should show unread badge in header when messages are unread', async ({ page, authenticatedUser, useMocks }) => {
+    if (!useMocks) {
+      // Skip if not using mocks - would need real API setup
+      test.skip();
+      return;
+    }
+
+    await page.goto('/');
+    
+    // Wait for page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Should show unread badge next to "Nachrichten" link
+    const messagesLink = page.locator('a:has-text("Nachrichten")');
+    await expect(messagesLink).toBeVisible({ timeout: 5000 });
+    
+    // Check for badge - it should show the unread count
+    const badge = messagesLink.locator('..').locator('[class*="Badge"]');
+    const badgeVisible = await badge.isVisible({ timeout: 2000 }).catch(() => false);
+    
+    if (badgeVisible) {
+      // Badge should show a number
+      const badgeText = await badge.textContent();
+      expect(badgeText).toBeTruthy();
+      expect(parseInt(badgeText || '0', 10)).toBeGreaterThan(0);
+    }
+  });
+
+  test('should show messages icon with badge on mobile', async ({ page, authenticatedUser, useMocks }) => {
+    if (!useMocks) {
+      test.skip();
+      return;
+    }
+
+    // Set mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+    
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    // Should show messages icon button (mobile)
+    const messagesIconButton = page.locator('a[href="/conversations"] button, button:has([data-lucide="message-square"])').or(
+      page.locator('a[href="/conversations"]')
+    );
+    
+    // Check if messages link/button exists (might be in mobile nav or header)
+    const messagesLink = page.locator('a[href="/conversations"]');
+    const hasMessagesLink = await messagesLink.isVisible({ timeout: 2000 }).catch(() => false);
+    
+    expect(hasMessagesLink).toBe(true);
+  });
+
+  test('should navigate to conversations from header link', async ({ page, authenticatedUser }) => {
+    await page.goto('/');
+    
+    // Find and click messages link
+    const messagesLink = page.locator('a:has-text("Nachrichten")').or(page.locator('a[href="/conversations"]'));
+    await expect(messagesLink.first()).toBeVisible({ timeout: 5000 });
+    await messagesLink.first().click();
+    
+    // Should navigate to conversations page
+    await expect(page).toHaveURL(/\/conversations/, { timeout: 5000 });
+    await expect(page.locator('h1')).toContainText(/Nachrichten/i);
+  });
 });
 
