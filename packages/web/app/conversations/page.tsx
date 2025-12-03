@@ -47,12 +47,20 @@ export default function ConversationsPage() {
   const conversations = conversationsData?.data || [];
 
   // Separate conversations: my offers vs my interests
-  const myOffersConversations = conversations.filter(
-    (conv) => conv.listing && conv.listing.userId === user?.id
-  );
-  const myInterestsConversations = conversations.filter(
-    (conv) => conv.listing && conv.listing.userId !== user?.id
-  );
+  // My offers: conversations where I am the listing owner
+  const myOffersConversations = conversations.filter((conv) => {
+    if (!conv.listing || !user?.id) return false;
+    // Check if listing.userId matches current user
+    return conv.listing.userId === user.id;
+  });
+
+  // My interests: conversations where I'm interested in someone else's listing
+  const myInterestsConversations = conversations.filter((conv) => {
+    if (!conv.listing || !user?.id) return false;
+    // Check if listing.userId does NOT match current user
+    return conv.listing.userId !== user.id;
+  });
+
 
   // Group my offers conversations by listing
   const myOffersByListing = myOffersConversations.reduce((acc, conversation) => {
