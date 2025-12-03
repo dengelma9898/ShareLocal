@@ -1,0 +1,109 @@
+# @sharelocal/database - Cursor Rules
+
+⚠️ **WICHTIG**: Diese Datei sollte mit `AGENTS.md` synchronisiert bleiben.
+Die Quelle der Wahrheit ist `packages/database/AGENTS.md`. Diese `.cursorrules` Datei wird von Cursor automatisch eingelesen.
+
+---
+
+# @sharelocal/database - Agent Context
+
+Prisma Database Schema Package
+
+## Setup commands
+
+- Install deps: `pnpm install` (vom Root) oder `pnpm --filter @sharelocal/database install`
+- Generate Prisma Client: `pnpm db:generate`
+- Push schema to DB: `pnpm db:push` (Development)
+- Create migration: `pnpm db:migrate`
+- Open Prisma Studio: `pnpm db:studio`
+- Seed database: `pnpm db:seed`
+
+## Dev environment tips
+
+- PostgreSQL 17.x mit PostGIS erforderlich
+- DATABASE_URL in `.env` Datei (Root-Verzeichnis) setzen
+- Format: `postgresql://user:password@localhost:5432/sharelocal?schema=public`
+- Nach Schema-Änderungen: `pnpm db:generate` ausführen
+- Prisma Studio für Datenbank-Browser: `pnpm db:studio`
+
+## Code style
+
+- Prisma Schema Syntax befolgen
+- Model-Namen: PascalCase
+- Field-Namen: camelCase
+- Relations klar definieren
+- Indexes für Performance
+
+## Testing instructions
+
+- Schema-Validierung: `prisma validate`
+- Migration-Tests: `prisma migrate dev --create-only` (prüft Syntax)
+- Seed-Script sollte idempotent sein
+
+## Package structure
+
+```
+prisma/
+├── schema.prisma     # Prisma Schema Definition
+└── seed.ts           # Database Seed Script (später)
+```
+
+## Dependencies
+
+- **@prisma/client**: Runtime-Dependency (wird von API verwendet)
+- **prisma**: CLI-Tool als devDependency (nur für Development/Build)
+- PostgreSQL 17.x mit PostGIS
+
+### ⚠️ WICHTIG: Prisma CLI Installation
+
+**Prisma CLI ist eine devDependency in diesem Package:**
+- Installiert in: `packages/database/package.json` → `devDependencies.prisma`
+- **NIEMALS** im Root installieren (`pnpm add -D -w prisma`)
+- **IMMER** Package-spezifisch installieren: `pnpm --filter @sharelocal/database add -D prisma@^5.19.0`
+
+**Für Docker Builds:**
+```dockerfile
+# Richtig: Im database Package installieren
+RUN pnpm --filter @sharelocal/database add -D prisma@^5.19.0 && \
+    pnpm --filter @sharelocal/database db:generate && \
+    pnpm --filter @sharelocal/database remove prisma
+
+# Falsch: Im Root installieren
+RUN pnpm add -D -w prisma@^5.19.0  # ❌ Verursacht workspace-root-check Fehler
+```
+
+**Prisma Client Generation:**
+- `prisma generate` benötigt **KEINE** DATABASE_URL
+- Benötigt nur das Prisma Schema (`prisma/schema.prisma`)
+- Generiert TypeScript-Types und Client-Code
+
+## Important notes
+
+- Schema-Änderungen erfordern Migrationen
+- Migrationen sollten niemals manuell editiert werden
+- Seed-Script für Development-Daten
+- PostGIS für geografische Features (Standort-Suche)
+- Foreign Keys und Constraints definieren
+- Indexes für häufig abgefragte Felder
+
+## Database constraints
+
+- Alle Tabellen sollten `createdAt` und `updatedAt` haben
+- Soft Deletes mit `deletedAt` (später)
+- UUIDs für IDs bevorzugt
+- Timestamps als DateTime
+
+## ⚠️ WICHTIG: Schema-Validierung muss erfolgreich sein
+
+**Vor dem Abschließen von Schema-Änderungen MUSS die Validierung erfolgreich sein:**
+
+```bash
+pnpm db:generate
+prisma validate
+```
+
+- Prisma Schema muss valide sein
+- Prisma Client Generation muss erfolgreich sein
+- Migrationen müssen erstellt werden können: `pnpm db:migrate --create-only`
+- Schema-Fehler müssen behoben werden, bevor Änderungen als abgeschlossen gelten
+

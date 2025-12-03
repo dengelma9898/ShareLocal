@@ -8,7 +8,7 @@ import { UserRepository } from '../../ports/repositories/UserRepository.js';
 import { ListingRepository } from '../../ports/repositories/ListingRepository.js';
 
 export interface CreateConversationData {
-  listingId?: string;
+  listingId: string; // Required - no direct chats allowed
   participantIds: string[];
 }
 
@@ -38,17 +38,15 @@ export class CreateConversationUseCase {
       }
     }
 
-    // If listingId provided, validate listing exists
-    if (data.listingId) {
-      const listing = await this.listingRepository.findById(data.listingId);
-      if (!listing || listing.isDeleted()) {
-        throw new AppError(404, 'Listing not found');
-      }
+    // Validate listing exists (required)
+    const listing = await this.listingRepository.findById(data.listingId);
+    if (!listing || listing.isDeleted()) {
+      throw new AppError(404, 'Listing not found');
+    }
 
-      // Check if listing owner is in participants
-      if (!data.participantIds.includes(listing.userId)) {
-        throw new AppError(400, 'Listing owner must be a participant');
-      }
+    // Check if listing owner is in participants
+    if (!data.participantIds.includes(listing.userId)) {
+      throw new AppError(400, 'Listing owner must be a participant');
     }
 
     // Check if conversation already exists between these users (for same listing)

@@ -4,9 +4,10 @@
 import { z } from 'zod';
 
 // Create Conversation Schema
+// listingId is required - no direct chats allowed, only via listings
 // participantIds kann 1 sein, da der aktuelle User automatisch hinzugefügt wird
 export const createConversationSchema = z.object({
-  listingId: z.string().uuid('Invalid listing ID').optional(),
+  listingId: z.string().uuid('Invalid listing ID'),
   participantIds: z
     .array(z.string().uuid('Invalid user ID'))
     .min(1, 'At least 1 participant required (current user will be added automatically)')

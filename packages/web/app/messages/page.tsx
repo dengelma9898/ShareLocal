@@ -1,8 +1,8 @@
 'use client';
 
 // Messages Page
-// Erstellt oder findet eine Conversation mit einem bestimmten User
-// und leitet zur Conversation-Detail-Seite weiter
+// Erstellt eine Conversation über ein Listing
+// Erfordert listingId - keine direkten Chats erlaubt
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,8 +10,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { createConversation } from '@/lib/api/conversations';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 function MessagesPageContent() {
   const router = useRouter();
@@ -20,13 +22,15 @@ function MessagesPageContent() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const targetUserId = searchParams.get('user');
+  const listingId = searchParams.get('listing');
+  const userId = searchParams.get('user'); // Optional: for backward compatibility, but will redirect
 
   // Create conversation mutation
   const createConversationMutation = useMutation({
-    mutationFn: (participantIds: string[]) =>
+    mutationFn: (data: { listingId: string; participantIds: string[] }) =>
       createConversation({
-        participantIds,
+        listingId: data.listingId,
+        participantIds: data.participantIds,
       }),
     onSuccess: (conversation) => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -38,7 +42,6 @@ function MessagesPageContent() {
         description: error.response?.data?.error || 'Konversation konnte nicht erstellt werden.',
         variant: 'destructive',
       });
-      // Redirect to conversations page on error
       router.push('/conversations');
     },
   });
@@ -49,38 +52,39 @@ function MessagesPageContent() {
 
     // Redirect to login if not authenticated
     if (!isAuthenticated) {
-      router.push(`/login?redirect=/messages${targetUserId ? `?user=${targetUserId}` : ''}`);
+      router.push(`/login?redirect=/messages${listingId ? `?listing=${listingId}` : ''}`);
       return;
     }
 
-    // Check if user ID is provided
-    if (!targetUserId) {
-      toast({
-        title: 'Fehler',
-        description: 'Keine Benutzer-ID angegeben.',
-        variant: 'destructive',
-      });
-      router.push('/conversations');
-      return;
-    }
-
-    // Check if user is trying to contact themselves
-    if (user?.id === targetUserId) {
+    // If only userId is provided (old format), redirect to listings
+    if (userId && !listingId) {
       toast({
         title: 'Hinweis',
-        description: 'Du kannst dir selbst keine Nachricht senden.',
+        description: 'Bitte wähle ein Angebot aus, um eine Nachricht zu senden.',
         variant: 'default',
       });
-      router.push('/conversations');
+      router.push('/listings');
       return;
     }
 
-    // Only create conversation if mutation hasn't been called yet and user is available
-    if (user?.id && !createConversationMutation.isPending && !createConversationMutation.isSuccess) {
-      createConversationMutation.mutate([user.id, targetUserId]);
+    // Check if listing ID is provided
+    if (!listingId) {
+      toast({
+        title: 'Fehler',
+        description: 'Keine Angebots-ID angegeben. Bitte wähle ein Angebot aus.',
+        variant: 'destructive',
+      });
+      router.push('/listings');
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, isAuthenticated, user?.id, targetUserId]);
+
+    // Create conversation with listing owner
+    // We need to fetch the listing first to get the owner ID
+    // For now, we'll redirect to the listing detail page where they can click "Kontakt aufnehmen"
+    if (user?.id) {
+      router.push(`/listings/${listingId}`);
+    }
+  }, [authLoading, isAuthenticated, user, listingId, userId, router, toast]);
 
   // Show loading state
   return (
@@ -89,7 +93,7 @@ function MessagesPageContent() {
         <CardContent className="pt-6 flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Konversation wird erstellt...</p>
+            <p className="text-muted-foreground">Weiterleitung zum Angebot...</p>
           </div>
         </CardContent>
       </Card>

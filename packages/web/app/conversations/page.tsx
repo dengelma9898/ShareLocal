@@ -9,10 +9,21 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { MessageSquare, Loader2, Inbox } from 'lucide-react';
+import { MessageSquare, Loader2, Inbox, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { ListingCategory } from '@sharelocal/shared';
+
+// Kategorie Labels
+const categoryLabels: Record<string, string> = {
+  TOOL: 'Werkzeug',
+  PLANT: 'Pflanze',
+  SKILL: 'Fähigkeit',
+  PRODUCT: 'Produkt',
+  TIME: 'Zeit',
+  OTHER: 'Sonstiges',
+};
 
 export default function ConversationsPage() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
@@ -32,6 +43,19 @@ export default function ConversationsPage() {
   });
 
   const conversations = conversationsData?.data || [];
+
+  // Group conversations by listing
+  const conversationsByListing = conversations.reduce((acc, conversation) => {
+    const listingId = conversation.listingId || 'no-listing';
+    if (!acc[listingId]) {
+      acc[listingId] = {
+        listing: conversation.listing,
+        conversations: [],
+      };
+    }
+    acc[listingId].conversations.push(conversation);
+    return acc;
+  }, {} as Record<string, { listing: Conversation['listing']; conversations: Conversation[] }>);
 
   // Get other participant (not current user)
   const getOtherParticipant = (conversation: Conversation) => {
@@ -121,75 +145,91 @@ export default function ConversationsPage() {
         </Card>
       )}
 
-      {/* Conversations List */}
+      {/* Conversations List - Grouped by Listing */}
       {!isLoading && !isError && conversations.length > 0 && (
-        <div className="space-y-2">
-          {conversations.map((conversation) => {
-            const otherParticipant = getOtherParticipant(conversation);
-            const initials = otherParticipant?.name
-              .split(' ')
-              .map((n: string) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2) || '?';
+        <div className="space-y-6">
+          {Object.entries(conversationsByListing).map(([listingId, group]) => (
+            <div key={listingId} className="space-y-2">
+              {/* Listing Header */}
+              {group.listing && (
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold">{group.listing.title}</h2>
+                    <Badge variant={group.listing.type === 'OFFER' ? 'default' : 'secondary'}>
+                      {group.listing.type === 'OFFER' ? 'Angebot' : 'Gesuch'}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {categoryLabels[group.listing.category] || group.listing.category}
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/listings/${group.listing.id}`}>Zum Angebot</Link>
+                  </Button>
+                </div>
+              )}
 
-            return (
-              <Link key={conversation.id} href={`/conversations/${conversation.id}`}>
-                <Card className="hover:bg-accent transition-colors cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      {/* Avatar */}
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={otherParticipant?.avatar || undefined} alt={otherParticipant?.name || 'User'} />
-                        <AvatarFallback>{initials}</AvatarFallback>
-                      </Avatar>
+              {/* Conversations for this listing */}
+              <div className="space-y-2">
+                {group.conversations.map((conversation) => {
+                  const otherParticipant = getOtherParticipant(conversation);
+                  const initials = otherParticipant?.name
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2) || '?';
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-semibold truncate">{otherParticipant?.name || 'Unbekannt'}</h3>
-                          {conversation.lastMessage && (
-                            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                              {formatDistanceToNow(new Date(conversation.lastMessage.createdAt), {
-                                addSuffix: true,
-                                locale: de,
-                              })}
-                            </span>
-                          )}
-                        </div>
+                  return (
+                    <Link key={conversation.id} href={`/conversations/${conversation.id}`}>
+                      <Card className="hover:bg-accent transition-colors cursor-pointer">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-4">
+                            {/* Avatar */}
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={otherParticipant?.avatar || undefined} alt={otherParticipant?.name || 'User'} />
+                              <AvatarFallback>{initials}</AvatarFallback>
+                            </Avatar>
 
-                        {/* Listing Info */}
-                        {conversation.listing && (
-                          <div className="mb-2">
-                            <Badge variant="outline" className="text-xs">
-                              {conversation.listing.type === 'OFFER' ? 'Angebot' : 'Gesuch'}: {conversation.listing.title}
-                            </Badge>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between mb-1">
+                                <h3 className="font-semibold truncate">{otherParticipant?.name || 'Unbekannt'}</h3>
+                                {conversation.lastMessage && (
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                                    {formatDistanceToNow(new Date(conversation.lastMessage.createdAt), {
+                                      addSuffix: true,
+                                      locale: de,
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Last Message Preview */}
+                              {conversation.lastMessage ? (
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {conversation.lastMessage.senderId === user?.id ? 'Du: ' : ''}
+                                  {conversation.lastMessage.content}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground italic">Keine Nachrichten bisher</p>
+                              )}
+                            </div>
+
+                            {/* Unread Badge */}
+                            {conversation.unreadCount > 0 && (
+                              <Badge className="bg-primary text-primary-foreground">
+                                {conversation.unreadCount}
+                              </Badge>
+                            )}
                           </div>
-                        )}
-
-                        {/* Last Message Preview */}
-                        {conversation.lastMessage ? (
-                          <p className="text-sm text-muted-foreground truncate">
-                            {conversation.lastMessage.senderId === user?.id ? 'Du: ' : ''}
-                            {conversation.lastMessage.content}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">Keine Nachrichten bisher</p>
-                        )}
-                      </div>
-
-                      {/* Unread Badge */}
-                      {conversation.unreadCount > 0 && (
-                        <Badge className="bg-primary text-primary-foreground">
-                          {conversation.unreadCount}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

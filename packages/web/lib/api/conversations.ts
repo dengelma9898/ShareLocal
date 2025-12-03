@@ -37,7 +37,7 @@ export interface Message {
 }
 
 export interface CreateConversationData {
-  listingId?: string;
+  listingId: string; // Required - no direct chats allowed, only via listings
   participantIds: string[];
 }
 

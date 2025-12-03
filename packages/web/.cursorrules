@@ -1,0 +1,273 @@
+# @sharelocal/web - Cursor Rules
+
+⚠️ **WICHTIG**: Diese Datei sollte mit `AGENTS.md` synchronisiert bleiben.
+Die Quelle der Wahrheit ist `packages/web/AGENTS.md`. Diese `.cursorrules` Datei wird von Cursor automatisch eingelesen.
+
+---
+
+# @sharelocal/web - Agent Context
+
+Next.js Frontend Package - Next.js 16 + React 19 + TypeScript
+
+## Setup commands
+
+- Install deps: `pnpm install` (vom Root) oder `pnpm --filter @sharelocal/web install`
+- Start dev server: `pnpm dev` (vom Package-Root) oder `pnpm web:dev` (vom Root)
+- Build: `pnpm build`
+- Start production: `pnpm start`
+- Run tests: `pnpm test`
+- Lint: `pnpm lint`
+
+## Dev environment tips
+
+- App läuft standardmäßig auf `http://localhost:3000`
+- Next.js App Router wird verwendet (`app/` Verzeichnis)
+- Hot-Reload ist automatisch aktiviert
+- Environment-Variablen: `NEXT_PUBLIC_*` für Client-seitige Variablen
+
+## Code style
+
+- TypeScript strict mode
+- React 19 mit Server Components
+- Single quotes, semicolons
+- Functional Components bevorzugt
+- **Tailwind CSS** für Styling ✅
+- **shadcn/ui** für UI-Komponenten ✅ (Copy-Paste Komponenten, keine Dependency)
+- **Type Safety**: Vermeide `any` Types wo möglich - verwende konkrete Types (Zod-inferred types, React types, etc.)
+- **ESLint**: Keine `eslint-disable` Kommentare - wenn eine Regel zu strikt ist, entferne sie aus der ESLint-Konfiguration statt sie zu deaktivieren
+
+## Testing instructions
+
+### ✅ Haupttest-Methode für MVP: E2E Tests
+- **E2E Tests: Playwright** (`pnpm test:e2e`) - ✅ Haupttest-Methode
+- **Mock Mode:** `pnpm test:e2e:mocked` (schnell, keine API nötig)
+- **Real Mode:** `pnpm test:e2e:real` (mit echter API)
+- **KRITISCH: Alle E2E Tests MÜSSEN erfolgreich sein vor jedem Commit**
+
+### ⚠️ Optional: Unit Tests
+- **Unit Tests: Vitest** (`pnpm test:watch` für interaktiv, `pnpm test` für einmalig)
+- **Status:** Optional, nicht kritisch für MVP
+- **Hinweis:** Unit Tests sind für MVP nicht erforderlich, da E2E Tests bereits die meisten Fälle abdecken
+
+**Wichtig:** Für MVP sind E2E Tests ausreichend. Unit Tests können später hinzugefügt werden.
+
+### E2E Tests mit Playwright
+
+Playwright testet die vollständige User-Journey durch die Web-App inklusive Integration mit der Backend API.
+
+**Test-Commands:**
+```bash
+# Real Mode: Alle E2E Tests mit echter API (benötigt laufende API)
+pnpm test:e2e:real
+
+# Mock Mode: Tests mit Mock-Daten (keine API nötig) ⚡
+pnpm test:e2e:mocked
+
+# Alle Tests (beide Modi)
+pnpm test:e2e
+
+# Mit UI (interaktiv)
+pnpm test:e2e:ui
+
+# Im Browser (headed mode)
+pnpm test:e2e:headed
+
+# Debug Mode
+pnpm test:e2e:debug
+
+# Report anzeigen
+pnpm test:e2e:report
+```
+
+**Mock Mode vs. Real Mode:**
+- **Mock Mode** (`test:e2e:mocked`): Schnell, keine API nötig, perfekt für Entwicklung
+- **Real Mode** (`test:e2e:real`): Vollständige Integration, benötigt laufende Backend API
+- Siehe `e2e/MOCK_MODE.md` für Details
+
+**Test-Struktur:**
+```
+e2e/
+├── auth.spec.ts              # Authentication Tests
+├── listings.spec.ts          # Listing Discovery Tests
+├── listings-authenticated.spec.ts  # Listing Management (authenticated)
+├── conversations.spec.ts     # Chat Tests (später)
+├── fixtures.ts               # Custom Test Fixtures
+└── helpers/
+    └── auth.ts               # Auth Helper Functions
+```
+
+**Wichtige Hinweise:**
+- Tests laufen sequenziell für bessere API-Isolation
+- **Backend API MUSS auf `http://localhost:3001` laufen** (siehe `e2e/SETUP.md`)
+- Tests verwenden Test-Daten (werden automatisch erstellt/bereinigt)
+- Screenshots werden bei Fehlern automatisch erstellt
+- HTML Report wird nach Tests generiert
+
+**Voraussetzungen für E2E Tests:**
+1. Backend API muss laufen (`cd packages/api && pnpm dev`)
+2. Database muss verfügbar sein
+3. Environment Variables müssen gesetzt sein (`.env` im Root)
+4. Siehe `e2e/SETUP.md` für vollständige Setup-Anleitung
+5. Quick Start: `e2e/QUICK_START.md`
+
+### ⚠️ WICHTIG: Tests müssen erfolgreich sein
+
+**Vor jedem Commit MÜSSEN alle Tests erfolgreich laufen:**
+```bash
+# Unit Tests
+pnpm test
+
+# E2E Tests (benötigt laufenden Dev-Server)
+pnpm test:e2e
+```
+
+- ✅ Alle Tests müssen grün sein (0 failed)
+- ❌ Keine fehlgeschlagenen Tests werden akzeptiert
+- 🔄 Bei fehlgeschlagenen Tests: Problem beheben, Tests erneut ausführen
+
+## Package structure
+
+```
+app/
+├── layout.tsx        # Root Layout
+├── page.tsx          # Home Page
+├── globals.css       # Global Styles
+└── [routes]/        # App Router Routes (später)
+components/           # React Components (später)
+lib/                  # Utilities (später)
+hooks/                # Custom Hooks (später)
+```
+
+## Dependencies
+
+- Next.js 16.x mit App Router
+- React 19.x
+- TypeScript 5.6+
+- **Tailwind CSS** ✅
+- **shadcn/ui** ✅ (Radix UI + Tailwind CSS)
+- **React Hook Form + Zod** ✅
+- **Axios** für API Calls ✅
+- next-intl für i18n (später)
+
+## Important notes
+
+- Server Components sind Standard, Client Components nur wenn nötig (`'use client'`)
+- API Calls sollten Server Actions oder Route Handlers verwenden
+- Bilder mit Next.js Image Component optimieren
+- Code Splitting automatisch durch Next.js
+- SEO-Metadaten in Layout/Page Metadata
+
+## ♿ Accessibility (WCAG 2.1 AA Compliance) - MUSS implementiert werden
+
+**Accessibility ist ein MUSS, nicht optional!** Alle UI-Komponenten müssen barrierefrei sein.
+
+### Grundlegende Anforderungen:
+
+1. **Semantic HTML**
+   - Korrekte HTML5-Elemente verwenden (`<nav>`, `<main>`, `<header>`, `<footer>`, etc.)
+   - Überschriften-Hierarchie einhalten (`h1` → `h2` → `h3`)
+   - Formulare mit `<form>`, `<label>`, `<input>` korrekt strukturieren
+
+2. **ARIA Labels & Roles**
+   - `aria-label` für Icon-Buttons ohne Text
+   - `aria-describedby` für Form-Felder mit Hilfetext
+   - `aria-live="polite"` für dynamische Inhalte (Error Messages, Success Messages)
+   - `aria-invalid` für Form-Validierung
+   - `role` nur wenn nötig (semantic HTML bevorzugt)
+
+3. **Keyboard Navigation**
+   - Alle interaktiven Elemente müssen per Tastatur erreichbar sein
+   - Focus-Indikatoren sichtbar (`focus:ring-2` in Tailwind)
+   - Tab-Reihenfolge logisch
+   - Skip Links für Navigation (`<a href="#main-content">Skip to main content</a>`)
+
+4. **Screen Reader Support**
+   - Alt-Text für alle Bilder (`alt` Attribute)
+   - `aria-label` für dekorative Icons
+   - Error Messages mit `aria-describedby` verknüpfen
+   - Loading States mit `aria-busy="true"`
+
+5. **Color Contrast**
+   - Mindestens WCAG AA: 4.5:1 für normalen Text, 3:1 für große Texte
+   - Nicht nur Farbe für Information verwenden (Icons, Text ergänzen)
+
+6. **Form Validation**
+   - Error Messages direkt nach dem Input-Feld
+   - `aria-invalid="true"` bei Fehlern
+   - `aria-describedby` auf Error-Message verweisen
+   - Focus auf erstes fehlerhaftes Feld nach Submit
+
+7. **Focus Management**
+   - Focus nach Modal-Öffnung ins Modal
+   - Focus nach Submit auf Success/Error Message
+   - Focus Trap in Modals
+
+### Tools für Testing:
+
+- **Lighthouse** (Chrome DevTools) - Accessibility Score
+- **axe DevTools** Browser Extension
+- **WAVE** Browser Extension
+- **Keyboard Navigation** - Manuell testen mit Tab/Enter/Space
+- **Screen Reader** - NVDA (Windows), VoiceOver (macOS), JAWS
+
+### Beispiel für accessible Form:
+
+```tsx
+<div>
+  <label htmlFor="email" className="block text-sm font-medium">
+    E-Mail-Adresse
+  </label>
+  <input
+    id="email"
+    type="email"
+    aria-invalid={errors.email ? 'true' : 'false'}
+    aria-describedby={errors.email ? 'email-error' : undefined}
+    autoComplete="email"
+  />
+  {errors.email && (
+    <p id="email-error" role="alert" className="text-red-600">
+      {errors.email.message}
+    </p>
+  )}
+</div>
+```
+
+### Checkliste vor jedem Commit:
+
+- [ ] Alle Buttons haben Text oder `aria-label`
+- [ ] Alle Form-Felder haben `<label>` mit `htmlFor`
+- [ ] Error Messages haben `role="alert"` und `aria-describedby`
+- [ ] Keyboard Navigation funktioniert (Tab, Enter, Space)
+- [ ] Focus-Indikatoren sind sichtbar
+- [ ] Color Contrast erfüllt WCAG AA
+- [ ] Screen Reader kann alle Inhalte lesen
+- [ ] Skip Links vorhanden (bei komplexen Layouts)
+
+## ⚠️ WICHTIG: Build UND Dev-Start müssen erfolgreich sein
+
+**Vor dem Abschließen von Änderungen MÜSSEN beide Checks erfolgreich sein:**
+
+### 1. Build Check
+```bash
+pnpm build
+```
+- Next.js Build muss ohne Fehler durchlaufen
+- Alle Type-Checks müssen bestehen
+
+### 2. Dev-Start Check
+```bash
+pnpm dev
+```
+- Next.js Dev-Server muss ohne Runtime-Fehler starten können
+- Keine unhandled exceptions
+- Alle Imports müssen aufgelöst werden können
+
+**Wichtig**: Build und Dev-Start können unterschiedliche Fehler zeigen:
+- Build prüft Type-Checks und Production-Build
+- Dev-Start zeigt Runtime-Fehler beim Starten
+- **Beide müssen erfolgreich sein**, bevor Änderungen als abgeschlossen gelten
+
+Bei Fehlern:
+- Build-Fehler: `pnpm tsc --noEmit` für detaillierte TypeScript-Fehlermeldungen
+- Runtime-Fehler: Prüfe die Console-Ausgabe beim `pnpm dev` Start
+

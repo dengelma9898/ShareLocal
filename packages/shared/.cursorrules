@@ -1,0 +1,83 @@
+# @sharelocal/shared - Cursor Rules
+
+⚠️ **WICHTIG**: Diese Datei sollte mit `AGENTS.md` synchronisiert bleiben.
+Die Quelle der Wahrheit ist `packages/shared/AGENTS.md`. Diese `.cursorrules` Datei wird von Cursor automatisch eingelesen.
+
+---
+
+# @sharelocal/shared - Agent Context
+
+Shared TypeScript Types und Utilities Package
+
+## Setup commands
+
+- Install deps: `pnpm install` (vom Root) oder `pnpm --filter @sharelocal/shared install`
+- Build: `pnpm build`
+- Watch mode: `pnpm dev`
+- Run tests: `pnpm test`
+- Lint: `pnpm lint`
+
+## Dev environment tips
+
+- Dieses Package wird von anderen Packages importiert
+- Nach Änderungen: `pnpm build` ausführen
+- Watch-Mode für Development: `pnpm dev`
+- Wird von `@sharelocal/api` und `@sharelocal/web` verwendet
+
+## Code style
+
+- TypeScript strict mode
+- ES Modules
+- Single quotes, semicolons
+- Nur Types und pure Functions (keine Side-Effects)
+- Keine Runtime-Dependencies (nur DevDependencies)
+
+## Testing instructions
+
+- Test-Framework: Vitest
+- Unit Tests: `pnpm test`
+- Alle Exports sollten getestet sein
+- Tests sollten vor jedem Commit grün sein
+
+## Package structure
+
+```
+src/
+├── index.ts          # Main Export
+├── types/            # Type Definitions (später)
+├── utils/            # Utility Functions (später)
+└── constants/        # Constants (später)
+```
+
+## Dependencies
+
+- Keine Runtime-Dependencies
+- TypeScript 5.6+ als DevDependency
+- Vitest für Testing
+
+## Important notes
+
+- Nur pure Functions und Types exportieren
+- Keine Side-Effects in diesem Package
+- Alle Exports sollten dokumentiert sein
+- Breaking Changes sollten vermieden werden (Semantic Versioning)
+- Wird von mehreren Packages verwendet - Änderungen mit Vorsicht
+
+## ⚠️ WICHTIG: Build UND Type-Check müssen erfolgreich sein
+
+**Vor dem Abschließen von Änderungen MUSS der Build erfolgreich sein:**
+
+```bash
+pnpm build
+pnpm tsc --noEmit
+```
+
+- TypeScript-Kompilierung muss ohne Fehler durchlaufen
+- Alle Type-Checks müssen bestehen
+- Build-Fehler müssen behoben werden, bevor Änderungen als abgeschlossen gelten
+- **Besonders wichtig**: Dieses Package wird von anderen Packages importiert - Build-Fehler brechen andere Packages!
+
+**Wichtig**: Nach Änderungen sollte auch geprüft werden, ob abhängige Packages noch funktionieren:
+- `pnpm build --filter @sharelocal/api` (falls API das Package verwendet)
+- `pnpm build --filter @sharelocal/web` (falls Web das Package verwendet)
+
