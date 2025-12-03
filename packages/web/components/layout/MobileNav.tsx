@@ -6,7 +6,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '@/lib/api/conversations';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -22,6 +25,18 @@ import { Separator } from '@/components/ui/separator';
 export function MobileNav() {
   const [open, setOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Fetch conversations to get unread count
+  const { data: conversationsData } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: () => getConversations(50, 0),
+    enabled: isAuthenticated,
+    refetchOnWindowFocus: true,
+  });
+
+  // Calculate total unread messages
+  const totalUnreadCount =
+    conversationsData?.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0) || 0;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -69,6 +84,16 @@ export function MobileNav() {
                 </Button>
                 <Button asChild variant="ghost" className="justify-start" onClick={() => setOpen(false)}>
                   <Link href="/listings/my">Meine Angebote</Link>
+                </Button>
+                <Button asChild variant="ghost" className="justify-start" onClick={() => setOpen(false)}>
+                  <Link href="/conversations" className="flex items-center justify-between w-full">
+                    <span>Nachrichten</span>
+                    {totalUnreadCount > 0 && (
+                      <Badge className="ml-2 h-5 min-w-5 px-1.5 text-xs bg-primary text-primary-foreground">
+                        {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                      </Badge>
+                    )}
+                  </Link>
                 </Button>
                 <Button asChild variant="ghost" className="justify-start" onClick={() => setOpen(false)}>
                   <Link href="/profile">Profil</Link>

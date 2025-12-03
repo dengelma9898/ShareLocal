@@ -5,7 +5,10 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { getConversations } from '@/lib/api/conversations';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,11 +18,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu } from 'lucide-react';
+import { Menu, MessageSquare } from 'lucide-react';
 import { MobileNav } from './MobileNav';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Fetch conversations to get unread count
+  const { data: conversationsData } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: () => getConversations(50, 0),
+    enabled: isAuthenticated,
+    // Refetch on window focus to get latest unread count
+    refetchOnWindowFocus: true,
+  });
+
+  // Calculate total unread messages
+  const totalUnreadCount =
+    conversationsData?.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0) || 0;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -39,12 +55,27 @@ export function Header() {
               Angebote
             </Link>
             {isAuthenticated && (
-              <Link
-                href="/listings/new"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Anbieten
-              </Link>
+              <>
+                <Link
+                  href="/listings/new"
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Anbieten
+                </Link>
+                <Link
+                  href="/conversations"
+                  className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <span className="flex items-center gap-2">
+                    Nachrichten
+                    {totalUnreadCount > 0 && (
+                      <Badge className="h-5 min-w-5 px-1.5 text-xs bg-primary text-primary-foreground">
+                        {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                      </Badge>
+                    )}
+                  </span>
+                </Link>
+              </>
             )}
           </nav>
         </div>
@@ -58,6 +89,18 @@ export function Header() {
 
           {isAuthenticated ? (
             <>
+              {/* Messages Link (Mobile) */}
+              <Link href="/conversations" className="md:hidden relative">
+                <Button variant="ghost" size="icon" className="relative">
+                  <MessageSquare className="h-5 w-5" />
+                  {totalUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                      {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -87,6 +130,16 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/listings/my">Meine Angebote</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/conversations" className="flex items-center justify-between">
+                      <span>Nachrichten</span>
+                      {totalUnreadCount > 0 && (
+                        <Badge className="ml-2 h-5 min-w-5 px-1.5 text-xs bg-primary text-primary-foreground">
+                          {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                        </Badge>
+                      )}
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>Abmelden</DropdownMenuItem>
