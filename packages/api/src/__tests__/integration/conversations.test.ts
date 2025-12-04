@@ -70,12 +70,21 @@ describe('POST /api/conversations', () => {
       name: 'User 2',
     });
 
+    const listing = await createTestListing({
+      ownerId: user1.id,
+      title: 'Test Listing',
+      description: 'Description',
+      category: 'TOOL',
+      type: 'OFFER',
+    });
+
     const token = generateTestToken(user1.id, user1.email);
 
     const response = await request(app)
       .post('/api/conversations')
       .set('Authorization', `Bearer ${token}`)
       .send({
+        listingId: listing.id,
         participantIds: [user2.id], // user1 nicht explizit hinzugefügt
       })
       .expect(201);

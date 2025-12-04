@@ -191,6 +191,7 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
         pricePerDay?: number;
         currency?: string;
         tags?: string[];
+        images?: string[];
       } = {
         title: data.title,
         description: data.description,
