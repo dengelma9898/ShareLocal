@@ -58,6 +58,28 @@ const optionalEnvVars: EnvVar[] = [
     validator: (value) => ['error', 'warn', 'info', 'debug'].includes(value),
     errorMessage: 'LOG_LEVEL must be one of: error, warn, info, debug',
   },
+  // IONOS Object Storage Environment Variables (für später, wenn Cloud-Storage benötigt wird)
+  // Aktuell nicht verwendet - MVP verwendet Server-basierte Speicherung
+  // {
+  //   name: 'IONOS_ENDPOINT',
+  //   required: false,
+  //   description: 'IONOS Object Storage endpoint URL (S3-kompatibel)',
+  // },
+  // {
+  //   name: 'IONOS_ACCESS_KEY_ID',
+  //   required: false,
+  //   description: 'IONOS access key ID for Object Storage',
+  // },
+  // {
+  //   name: 'IONOS_SECRET_ACCESS_KEY',
+  //   required: false,
+  //   description: 'IONOS secret access key for Object Storage',
+  // },
+  // {
+  //   name: 'IONOS_BUCKET_NAME',
+  //   required: false,
+  //   description: 'IONOS bucket name for images',
+  // },
 ];
 
 interface ValidationResult {

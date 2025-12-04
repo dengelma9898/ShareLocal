@@ -13,6 +13,8 @@ import { PrismaConversationRepository } from './adapters/database/PrismaConversa
 import { PrismaMessageRepository } from './adapters/database/PrismaMessageRepository.js';
 import { JwtAuthService } from './adapters/services/JwtAuthService.js';
 import { CryptoEncryptionService } from './adapters/services/CryptoEncryptionService.js';
+import { LocalStorageService } from './adapters/services/LocalStorageService.js';
+import { StorageService } from './ports/services/StorageService.js';
 import { validateEnvironmentOrThrow } from './utils/envValidation.js';
 import { logger } from './utils/logger.js';
 
@@ -41,6 +43,12 @@ const conversationRepository = new PrismaConversationRepository(prisma, encrypti
 const messageRepository = new PrismaMessageRepository(prisma, encryptionService);
 const authService = new JwtAuthService();
 
+// Storage Service: Verwendet Local Storage (Server-basierte Speicherung)
+// Für MVP: Bilder werden auf dem IONOS-Server gespeichert
+// Später: Kann zu IONOS Object Storage migriert werden (wenn nötig)
+const storageService: StorageService = new LocalStorageService();
+logger.info('Using Local Storage Service for image uploads (Server-based storage on IONOS)');
+
 // Dependency Injection
 const dependencies: AppDependencies = {
   userRepository,
@@ -48,6 +56,7 @@ const dependencies: AppDependencies = {
   conversationRepository,
   messageRepository,
   authService,
+  storageService,
   prisma,
   encryptionService,
 };

@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Upload, Image as ImageIcon } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -32,6 +32,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { uploadImage } from '@/lib/api/images';
 
 // Validation Schema
 const createListingSchema = z.object({
@@ -60,6 +61,7 @@ interface CreateListingFormProps {
     pricePerDay?: number;
     currency?: string;
     tags?: string[];
+    images?: string[];
   }) => Promise<void>;
 }
 
@@ -76,6 +78,9 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
   const [step, setStep] = useState(1);
   const [tagInput, setTagInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const form = useForm<CreateListingFormData>({
     resolver: zodResolver(createListingSchema),
@@ -104,6 +109,43 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
 
   const handleRemoveTag = (tagToRemove: string) => {
     form.setValue('tags', tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setImageError('Nur JPEG, PNG oder WebP Bilder sind erlaubt');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      setImageError('Bild ist zu groß. Maximum: 5MB');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    setImageError(null);
+
+    try {
+      const url = await uploadImage(file);
+      setImageUrl(url);
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      setImageError('Fehler beim Hochladen des Bildes. Bitte versuche es erneut.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(null);
+    setImageError(null);
   };
 
   const handleNext = async (e?: React.MouseEvent) => {
@@ -170,6 +212,10 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
 
       if (data.tags && data.tags.length > 0) {
         submitData.tags = data.tags;
+      }
+
+      if (imageUrl) {
+        submitData.images = [imageUrl];
       }
 
       await onSubmit(submitData);
@@ -397,6 +443,67 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
 
                 <Separator />
 
+                {/* Image Upload */}
+                <div className="space-y-2">
+                  <Label>Bild (optional)</Label>
+                  {!imageUrl ? (
+                    <div className="flex flex-col items-center justify-center w-full border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 hover:border-muted-foreground/50 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                        disabled={isUploadingImage}
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="flex flex-col items-center justify-center cursor-pointer"
+                      >
+                        {isUploadingImage ? (
+                          <>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2" />
+                            <span className="text-sm text-muted-foreground">Bild wird hochgeladen...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                            <span className="text-sm font-medium">Bild hochladen</span>
+                            <span className="text-xs text-muted-foreground mt-1">
+                              JPEG, PNG oder WebP (max. 5MB)
+                            </span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <img
+                        src={imageUrl}
+                        alt="Vorschau"
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  {imageError && (
+                    <p className="text-sm text-destructive">{imageError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Ein Bild hilft anderen, dein Angebot besser zu verstehen
+                  </p>
+                </div>
+
+                <Separator />
+
                 <FormField
                   control={form.control}
                   name="tags"
@@ -460,6 +567,15 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Vorschau</h3>
                   <Card>
+                    {imageUrl && (
+                      <div className="relative w-full h-48 overflow-hidden rounded-t-lg">
+                        <img
+                          src={imageUrl}
+                          alt={watchedValues.title || 'Vorschau'}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>

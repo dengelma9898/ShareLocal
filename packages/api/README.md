@@ -83,6 +83,38 @@ Die API validiert beim Start automatisch alle erforderlichen Environment Variabl
 - **LOG_LEVEL** (optional)
   - Logging Level: `error`, `warn`, `info`, oder `debug`
 
+**Image Upload - Storage Configuration:**
+
+Die API verwendet **Server-basierte Speicherung** (Local Storage) für MVP:
+
+### Server-basierte Speicherung (MVP)
+
+Bilder werden direkt auf dem IONOS-Server im Dateisystem gespeichert und über NGINX serviert.
+
+**Vorteile:**
+- ✅ Keine zusätzlichen Credentials nötig
+- ✅ Keine zusätzlichen Kosten
+- ✅ Funktioniert sofort ohne Setup
+- ✅ Bilder werden auf IONOS-Server in `uploads/images/` gespeichert
+- ✅ EU-konform (Daten bleiben auf IONOS-Server)
+
+**Optionale Environment Variables:**
+
+- **LOCAL_STORAGE_DIR** (optional, default: `uploads/images`)
+  - Verzeichnis für lokale Bildspeicherung
+  - Wird automatisch erstellt falls nicht vorhanden
+
+- **LOCAL_STORAGE_PUBLIC_URL** (optional)
+  - Öffentliche URL für lokale Bilder
+  - Wird automatisch generiert: `http://localhost:3001/uploads/images` (Development)
+  - Für deployed Environments: `https://nuernbergspots.de/uploads/images`
+
+- **BASE_URL** (optional, für deployed Environments)
+  - Basis-URL der Anwendung
+  - Wird für Public URL verwendet wenn gesetzt
+
+**Später:** Wenn Cloud-Storage benötigt wird, kann zu IONOS Object Storage migriert werden (siehe `docs/IMAGE_STORAGE_OPTIONS.md`).
+
 **Setup:**
 
 1. Kopiere `.env.example` zu `.env`:
@@ -147,6 +179,15 @@ Der Server läuft standardmäßig auf `http://localhost:3001`
 - `GET /api/users` - Liste aller User (mit Pagination)
 - `GET /api/users/:id` - User abrufen
 - `PUT /api/users/:id` - User aktualisieren (Protected: nur eigener Account)
+
+### Images
+
+- `POST /api/images/upload` - Bild hochladen (Protected, multipart/form-data)
+  - Body: `image` (File)
+  - Erlaubte Formate: JPEG, PNG, WebP
+  - Maximale Größe: 5MB
+  - Response: `{ data: { url: string, filename: string, mimetype: string } }`
+  - ⚠️ **Server-Storage**: Bilder werden auf IONOS-Server gespeichert (EU-konform)
 
 ### Listings
 

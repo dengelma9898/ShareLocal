@@ -43,14 +43,13 @@ Das API-Package verwendet **Ports & Adapters (Hexagonal Architecture)** für max
 **Diese Ports sind fest zugewiesen:**
 - ✅ API Dev: Port 3001 (konsistent mit NGINX-Konfiguration)
 - ✅ API Prod: Port 3101 (konsistent mit NGINX-Konfiguration)
-- ✅ NGINX-Konfiguration: `infrastructure/nginx/share-local-dev.conf` und `share-local-prd.conf`
+- ✅ NGINX-Konfiguration auf dem Server (Server ist die Quelle der Wahrheit)
 - ✅ CI-Workflows: `.github/workflows/ci-api.yml`
 
-**Bei Port-Änderungen müssen folgende Dateien aktualisiert werden:**
+**Bei Port-Änderungen müssen folgende Dateien/Systeme aktualisiert werden:**
 1. `.github/workflows/ci-api.yml` (deploy-dev und deploy-prd)
-2. `infrastructure/nginx/share-local-dev.conf`
-3. `infrastructure/nginx/share-local-prd.conf`
-4. Diese Dokumentation (`packages/api/AGENTS.md`)
+2. **NGINX-Konfiguration auf dem Server** (Server ist die Quelle der Wahrheit)
+3. Diese Dokumentation (`packages/api/AGENTS.md`)
 
 ## Code style
 

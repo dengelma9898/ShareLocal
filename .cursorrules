@@ -172,7 +172,7 @@ Jedes Package hat seine eigene `AGENTS.md` mit package-spezifischen Anweisungen.
 - **Maps**: flutter_map (OpenStreetMap)
 
 ### Infrastructure
-- **Hosting**: Hetzner Cloud (EU)
+- **Hosting**: IONOS Server Instances (EU)
 - **Container**: Docker 27.x + Docker Compose v2
 - **CI/CD**: GitHub Actions oder GitLab CI
 - **CDN**: Cloudflare (EU-Regionen)

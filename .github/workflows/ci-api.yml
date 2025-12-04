@@ -218,18 +218,27 @@ jobs:
               }
             echo "✅ Migrations completed"
             
-            # Start container
+            # Create uploads directory on host if it doesn't exist
+            echo "📁 Creating uploads directory on host..."
+            mkdir -p /var/www/sharelocal/uploads/images
+            chmod 755 /var/www/sharelocal/uploads/images
+            
+            # Start container with volume mount for image storage
             docker run -d \
               --name $CONTAINER_NAME \
               -p 3001:3001 \
               --restart unless-stopped \
               --network sharelocal-network \
+              -v /var/www/sharelocal/uploads/images:/app/uploads/images \
               -e NODE_ENV=development \
               -e PORT=3001 \
               -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
               -e LOG_LEVEL=debug \
+              -e BASE_URL=https://nuernbergspots.de \
+              -e LOCAL_STORAGE_DIR=/app/uploads/images \
+              -e LOCAL_STORAGE_PUBLIC_URL=https://nuernbergspots.de/uploads/images \
               $IMAGE_NAME
             
             # Verify container is running
@@ -328,18 +337,27 @@ jobs:
               }
             echo "✅ Migrations completed"
             
-            # Start container
+            # Create uploads directory on host if it doesn't exist
+            echo "📁 Creating uploads directory on host..."
+            mkdir -p /var/www/sharelocal/uploads/images
+            chmod 755 /var/www/sharelocal/uploads/images
+            
+            # Start container with volume mount for image storage
             docker run -d \
               --name $CONTAINER_NAME \
               -p 3101:3101 \
               --restart unless-stopped \
               --network sharelocal-network \
+              -v /var/www/sharelocal/uploads/images:/app/uploads/images \
               -e NODE_ENV=production \
               -e PORT=3101 \
               -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
               -e LOG_LEVEL=info \
+              -e BASE_URL=https://nuernbergspots.de \
+              -e LOCAL_STORAGE_DIR=/app/uploads/images \
+              -e LOCAL_STORAGE_PUBLIC_URL=https://nuernbergspots.de/uploads/images \
               $IMAGE_NAME
             
             # Verify container is running

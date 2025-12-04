@@ -106,6 +106,7 @@ export async function createListing(data: {
   pricePerDay?: number;
   currency?: string;
   tags?: string[];
+  images?: string[];
 }): Promise<Listing> {
   const response = await apiClient.post<{ data: Listing }>('/listings', data);
   return response.data.data;

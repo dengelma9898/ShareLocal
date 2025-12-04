@@ -27,6 +27,9 @@ lerna-debug.log*
 # Logs directory
 logs/
 
+# Local file uploads (Development)
+uploads/
+
 # Environment variables
 .env
 .env.local

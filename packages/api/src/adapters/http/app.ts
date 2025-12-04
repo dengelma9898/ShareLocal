@@ -4,6 +4,7 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { join } from 'path';
 import { createUserRoutes } from './routes/userRoutes.js';
 import { createListingRoutes } from './routes/listingRoutes.js';
 import { createAuthRoutes } from './routes/authRoutes.js';
@@ -29,7 +30,9 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { createHealthCheckHandler, createLivenessHandler, createReadinessHandler, HealthCheckDependencies } from './middleware/healthCheck.js';
 import { EncryptionService } from '../../ports/services/EncryptionService.js';
+import { StorageService } from '../../ports/services/StorageService.js';
 import { PrismaClient } from '@prisma/client';
+import { createImageRoutes } from './routes/imageRoutes.js';
 
 export interface AppDependencies {
   userRepository: UserRepository;
@@ -37,6 +40,7 @@ export interface AppDependencies {
   conversationRepository: ConversationRepository;
   messageRepository: MessageRepository;
   authService: AuthService;
+  storageService: StorageService;
   prisma: PrismaClient;
   encryptionService: EncryptionService;
 }
@@ -61,6 +65,16 @@ export function createApp(dependencies: AppDependencies): Express {
   
   // Body Parser: Parst JSON Request Bodies
   app.use(express.json());
+  
+  // Static File Serving: Für lokale Bilder (Server-basierte Speicherung)
+  // Serve uploaded images from uploads/images directory
+  // Aktiviert für Development und Production (MVP verwendet Server-Storage)
+  const uploadsPath = process.env.LOCAL_STORAGE_DIR || join(process.cwd(), 'uploads', 'images');
+  app.use('/uploads/images', express.static(uploadsPath, {
+    maxAge: '30d', // Cache-Control: public, max-age=2592000
+    etag: true,
+    lastModified: true,
+  }));
   
   // Rate Limiting: Allgemeine API-Limits (gilt für alle /api/* Routes)
   // Health Check und Root-Endpoint sind ausgenommen
@@ -155,6 +169,14 @@ export function createApp(dependencies: AppDependencies): Express {
       sendMessageUseCase,
       getMessagesUseCase,
       dependencies.conversationRepository,
+      dependencies.authService,
+      dependencies.userRepository
+    )
+  );
+  app.use(
+    '/api/images',
+    createImageRoutes(
+      dependencies.storageService,
       dependencies.authService,
       dependencies.userRepository
     )

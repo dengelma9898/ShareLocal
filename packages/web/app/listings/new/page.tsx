@@ -35,6 +35,7 @@ export default function CreateListingPage() {
     pricePerDay?: number;
     currency?: string;
     tags?: string[];
+    images?: string[];
   }) => {
     try {
       // Ensure currency is set if pricePerDay is provided

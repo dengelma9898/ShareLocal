@@ -165,7 +165,7 @@ Jedes Package hat seine eigene `AGENTS.md` mit package-spezifischen Anweisungen.
 - **Maps**: flutter_map (OpenStreetMap)
 
 ### Infrastructure
-- **Hosting**: Hetzner Cloud (EU)
+- **Hosting**: IONOS Server Instances (EU)
 - **Container**: Docker 27.x + Docker Compose v2
 - **CI/CD**: GitHub Actions oder GitLab CI
 - **CDN**: Cloudflare (EU-Regionen)
@@ -350,15 +350,14 @@ COPY --from=builder /app/packages/api/dist ./dist
 **⚠️ WICHTIG:**
 - Diese Ports sind **fest zugewiesen** und dürfen **NICHT** geändert werden ohne:
   1. CI-Workflows zu aktualisieren (`.github/workflows/ci-*.yml`)
-  2. NGINX-Konfigurationen zu aktualisieren (`infrastructure/nginx/*.conf`)
+  2. NGINX-Konfigurationen auf dem Server zu aktualisieren (Server ist die Quelle der Wahrheit)
   3. Diese Dokumentation zu aktualisieren
   4. Alle betroffenen Dokumentationen zu aktualisieren
 
-**Bei Port-Änderungen müssen folgende Dateien aktualisiert werden:**
+**Bei Port-Änderungen müssen folgende Dateien/Systeme aktualisiert werden:**
 - `.github/workflows/ci-api.yml` (deploy-dev: PORT=3001, deploy-prd: PORT=3101)
 - `.github/workflows/ci-web.yml` (deploy-dev: PORT=3002, deploy-prd: PORT=3102)
-- `infrastructure/nginx/share-local-dev.conf` (API: 3001, Web: 3002)
-- `infrastructure/nginx/share-local-prd.conf` (API: 3101, Web: 3102)
+- **NGINX-Konfiguration auf dem Server** (API: 3001/3101, Web: 3002/3102) - Server ist die Quelle der Wahrheit
 - `packages/api/AGENTS.md` (Port-Dokumentation)
 - `packages/web/Dockerfile` (EXPOSE Port)
 - Diese Datei (`AGENTS.md`)
