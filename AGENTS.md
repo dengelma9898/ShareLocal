@@ -191,6 +191,16 @@ Jedes Package hat seine eigene `AGENTS.md` mit package-spezifischen Anweisungen.
 - **Type Safety**: Vermeide `any` Types wo möglich - verwende konkrete Types (Zod-inferred types, Prisma types, React types, etc.)
 - **ESLint**: Keine `eslint-disable` Kommentare - wenn eine Regel zu strikt ist, entferne sie aus der ESLint-Konfiguration statt sie zu deaktivieren
 
+### Build-Verifizierung
+- ⚠️ **KRITISCH**: Nach jeder Änderung am Repository muss sichergestellt werden, dass das Projekt noch korrekt baut
+- **Vor jedem Commit** müssen folgende Checks durchgeführt werden:
+  - ✅ `pnpm --filter @sharelocal/api build` - API Build muss erfolgreich sein
+  - ✅ `pnpm --filter @sharelocal/web build` - Web Build muss erfolgreich sein
+  - ✅ `pnpm --filter @sharelocal/api test` - API Tests müssen durchlaufen
+  - ✅ TypeScript-Kompilierung muss ohne Fehler sein
+- **Bei Build-Fehlern**: Fehler müssen behoben werden, bevor der Commit gepusht wird
+- **CI/CD**: GitHub Actions führt diese Checks automatisch aus - lokale Verifizierung spart Zeit
+
 ### Performance
 - Backend: Caching (Redis), Database Indexing, Pagination
 - Frontend: Code Splitting, Image Optimization, Lazy Loading
