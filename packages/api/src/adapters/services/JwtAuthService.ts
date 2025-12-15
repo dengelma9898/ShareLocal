@@ -37,7 +37,7 @@ export class JwtAuthService implements AuthService {
     try {
       const decoded = jwt.verify(token, this.jwtSecret) as { userId: string; email: string };
       return decoded;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
