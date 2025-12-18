@@ -165,21 +165,38 @@ jobs:
       - name: Run Lighthouse CI
         run: |
           # Start Next.js dev server in background
-          pnpm --filter @sharelocal/web dev &
+          echo "Starting Next.js dev server..."
+          pnpm --filter @sharelocal/web dev > /tmp/nextjs.log 2>&1 &
           SERVER_PID=$!
           
-          # Wait for server to be ready
-          echo "Waiting for server to start..."
-          timeout 120 bash -c 'until curl -f http://localhost:3000 > /dev/null 2>&1; do sleep 2; done' || true
+          # Wait for server to be ready (max 120 seconds)
+          echo "Waiting for server to be ready..."
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "Server is ready!"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Server failed to start after 120 seconds"
+              cat /tmp/nextjs.log
+              kill $SERVER_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 2
+          done
           
-          # Run Lighthouse CI
-          lhci autorun || echo "Lighthouse CI failed, but continuing..."
+          # Run Lighthouse CI (allow failure to not block CI)
+          echo "Running Lighthouse CI..."
+          lhci autorun || echo "⚠️ Lighthouse CI completed with warnings/errors, but continuing..."
           
           # Stop server
+          echo "Stopping server..."
           kill $SERVER_PID 2>/dev/null || true
+          wait $SERVER_PID 2>/dev/null || true
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN || '' }}
           NODE_ENV: test
+        continue-on-error: true
 
       - name: Upload Lighthouse reports
         if: always()

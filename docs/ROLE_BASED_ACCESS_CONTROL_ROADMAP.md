@@ -106,6 +106,36 @@ cd packages/database
 pnpm db:migrate dev --name add_event_manager_role_and_events
 ```
 
+**Verifizierung**:
+```bash
+# 1. Prisma Schema validieren
+cd packages/database
+pnpm prisma validate
+
+# 2. Prisma Client generieren (sollte ohne Fehler laufen)
+pnpm db:generate
+
+# 3. Migration Status prüfen
+pnpm prisma migrate status
+
+# 4. Prisma Studio öffnen und prüfen:
+#    - UserRole Enum enthält USER, EVENT_MANAGER, ADMIN
+#    - Events-Tabelle existiert mit allen Feldern
+#    - User-Tabelle hat organizedEvents Relation
+pnpm db:studio
+
+# 5. TypeScript-Kompilierung prüfen (sollte ohne Fehler sein)
+cd ../..
+pnpm --filter @sharelocal/database build
+```
+
+**Erwartete Ergebnisse**:
+- ✅ `prisma validate` gibt keine Fehler zurück
+- ✅ `db:generate` generiert Prisma Client ohne Fehler
+- ✅ Migration wird als "applied" angezeigt
+- ✅ Prisma Studio zeigt Events-Tabelle und erweiterte UserRole Enum
+- ✅ TypeScript-Kompilierung erfolgreich
+
 **Dauer**: ~30 Minuten
 
 ---
@@ -148,6 +178,29 @@ pnpm db:migrate dev --name add_event_manager_role_and_events
    }
    ```
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/shared
+pnpm build
+
+# 2. Types exportieren prüfen
+node -e "const { UserRole, Event } = require('./dist/index.js'); console.log('UserRole:', UserRole); console.log('Event:', Event);"
+
+# 3. In anderen Packages importieren testen (sollte ohne Fehler sein)
+cd ../api
+pnpm build  # Sollte UserRole und Event Types finden können
+
+cd ../web
+pnpm build  # Sollte UserRole und Event Types finden können
+```
+
+**Erwartete Ergebnisse**:
+- ✅ `packages/shared` baut ohne Fehler
+- ✅ `UserRole` Type enthält 'USER' | 'EVENT_MANAGER' | 'ADMIN'
+- ✅ `Event` Interface ist exportiert
+- ✅ API und Web Packages können die Types importieren ohne TypeScript-Fehler
+
 **Dauer**: ~15 Minuten
 
 ---
@@ -183,6 +236,41 @@ pnpm db:migrate dev --name add_event_manager_role_and_events
 
 **Neue Datei**: `packages/api/src/domain/entities/Event.ts`
 - Event Domain Entity erstellen (analog zu User/Listing)
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. Unit-Tests für User Entity schreiben und ausführen
+#    (Test für isEventManager() und canManageEvents())
+pnpm test -- User.test.ts
+
+# 3. Manuell testen in Node REPL:
+node -e "
+const { User } = require('./dist/domain/entities/User.js');
+const user = new User({
+  id: '1',
+  email: 'test@test.com',
+  name: 'Test',
+  role: 'EVENT_MANAGER',
+  emailVerified: false,
+  createdAt: new Date(),
+  updatedAt: new Date()
+});
+console.log('isAdmin:', user.isAdmin()); // false
+console.log('isEventManager:', user.isEventManager()); // true
+console.log('canManageEvents:', user.canManageEvents()); // true
+"
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ `User.isEventManager()` gibt `true` für EVENT_MANAGER und ADMIN zurück
+- ✅ `User.canManageEvents()` gibt `true` für EVENT_MANAGER und ADMIN zurück
+- ✅ `User.isAdmin()` gibt `true` nur für ADMIN zurück
+- ✅ Event Entity existiert und kann instanziiert werden
 
 **Dauer**: ~45 Minuten
 
@@ -241,6 +329,42 @@ export function requireRole(
 }
 ```
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. Unit-Tests für RBAC Middleware schreiben
+pnpm test -- rbac.test.ts
+
+# 3. Integration-Test: Middleware mit Express testen
+#    - Test mit gültigem Token und korrekter Rolle → sollte durchlassen
+#    - Test mit gültigem Token aber falscher Rolle → sollte 403 zurückgeben
+#    - Test ohne Token → sollte 401 zurückgeben
+
+# 4. Manuell testen mit HTTP-Request:
+#    (Nachdem Event-Routes implementiert sind)
+curl -X POST http://localhost:3001/api/events \
+  -H "Authorization: Bearer <USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test"}' 
+# Erwartet: 403 Forbidden (USER hat nicht EVENT_MANAGER Rolle)
+
+curl -X POST http://localhost:3001/api/events \
+  -H "Authorization: Bearer <EVENT_MANAGER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test"}' 
+# Erwartet: 201 Created oder 400 Bad Request (wenn Validierung fehlt)
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Unit-Tests für RBAC Middleware bestehen
+- ✅ Middleware gibt 403 Forbidden für falsche Rolle zurück
+- ✅ Middleware gibt 401 Unauthorized für fehlendes Token zurück
+- ✅ Middleware lässt Requests mit korrekter Rolle durch
+
 **Dauer**: ~1 Stunde
 
 ---
@@ -260,6 +384,30 @@ export function requireRole(
 **Änderungen**:
 - `AuthenticatedRequest` erweitern um `role` Feld
 - Optional: Vollständiges User-Objekt in Request laden (für RBAC)
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. Bestehende Auth-Tests sollten weiterhin funktionieren
+pnpm test -- auth.test.ts
+
+# 3. Prüfen, dass req.user.role verfügbar ist:
+#    In einer Route: console.log(req.user?.role) sollte die Rolle ausgeben
+
+# 4. Integration-Test: Authentifizierte Route testen
+curl -X GET http://localhost:3001/api/users/me \
+  -H "Authorization: Bearer <VALID_TOKEN>"
+# Response sollte user.role enthalten
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Bestehende Auth-Tests bestehen weiterhin
+- ✅ `req.user.role` ist verfügbar in authentifizierten Routes
+- ✅ `/api/users/me` gibt User mit Rolle zurück
 
 **Dauer**: ~30 Minuten
 
@@ -283,6 +431,46 @@ export function requireRole(
 - `packages/api/src/application/use-cases/DeleteEventUseCase.ts`
 - `packages/api/src/application/use-cases/GetEventUseCase.ts`
 - `packages/api/src/application/use-cases/GetAllEventsUseCase.ts`
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. Unit-Tests für Use Cases schreiben
+pnpm test -- CreateEventUseCase.test.ts
+pnpm test -- UpdateEventUseCase.test.ts
+pnpm test -- DeleteEventUseCase.test.ts
+
+# 3. Repository-Tests schreiben
+pnpm test -- PrismaEventRepository.test.ts
+
+# 4. Integration-Test: Event erstellen via Repository
+#    (In Test-Datenbank)
+node -e "
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+prisma.event.create({
+  data: {
+    title: 'Test Event',
+    description: 'Test',
+    organizerId: 'USER_ID',
+    startDate: new Date(),
+    tags: []
+  }
+}).then(e => console.log('Event created:', e.id));
+"
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Alle Use Case Tests bestehen
+- ✅ Repository Tests bestehen
+- ✅ Event kann in Datenbank erstellt werden
+- ✅ Event kann aus Datenbank gelesen werden
+- ✅ Event kann aktualisiert werden
+- ✅ Event kann gelöscht werden (Soft Delete)
 
 **Dauer**: ~3 Stunden
 
@@ -312,6 +500,70 @@ export function requireRole(
 - `PUT /api/events/:id`: Organizer-Check + Admin-Check
 - `DELETE /api/events/:id`: Organizer-Check + Admin-Check
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. API Server starten
+pnpm dev
+
+# 3. Endpoints testen (in separatem Terminal):
+
+# GET /api/events (öffentlich, sollte funktionieren)
+curl http://localhost:3001/api/events
+# Erwartet: 200 OK mit Events-Array
+
+# GET /api/events/:id (öffentlich)
+curl http://localhost:3001/api/events/<EVENT_ID>
+# Erwartet: 200 OK mit Event-Details
+
+# POST /api/events (nur EVENT_MANAGER/ADMIN)
+curl -X POST http://localhost:3001/api/events \
+  -H "Authorization: Bearer <USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","description":"Test","startDate":"2025-01-01T00:00:00Z"}'
+# Erwartet: 403 Forbidden
+
+curl -X POST http://localhost:3001/api/events \
+  -H "Authorization: Bearer <EVENT_MANAGER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","description":"Test","startDate":"2025-01-01T00:00:00Z"}'
+# Erwartet: 201 Created
+
+# PUT /api/events/:id (nur Organizer oder ADMIN)
+curl -X PUT http://localhost:3001/api/events/<EVENT_ID> \
+  -H "Authorization: Bearer <OTHER_USER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated"}'
+# Erwartet: 403 Forbidden (nicht der Organizer)
+
+curl -X PUT http://localhost:3001/api/events/<EVENT_ID> \
+  -H "Authorization: Bearer <ORGANIZER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Updated"}'
+# Erwartet: 200 OK
+
+# DELETE /api/events/:id (nur Organizer oder ADMIN)
+curl -X DELETE http://localhost:3001/api/events/<EVENT_ID> \
+  -H "Authorization: Bearer <OTHER_USER_TOKEN>"
+# Erwartet: 403 Forbidden
+
+curl -X DELETE http://localhost:3001/api/events/<EVENT_ID> \
+  -H "Authorization: Bearer <ORGANIZER_TOKEN>"
+# Erwartet: 200 OK
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ GET-Endpoints sind öffentlich zugänglich
+- ✅ POST-Endpoint gibt 403 für USER zurück
+- ✅ POST-Endpoint akzeptiert EVENT_MANAGER und ADMIN
+- ✅ PUT-Endpoint akzeptiert nur Organizer oder ADMIN
+- ✅ DELETE-Endpoint akzeptiert nur Organizer oder ADMIN
+- ✅ Alle Endpoints geben korrekte HTTP-Status-Codes zurück
+
 **Dauer**: ~2 Stunden
 
 ---
@@ -340,6 +592,58 @@ export function requireRole(
 **RBAC-Implementierung**:
 - Alle Routes: `requireRole(['ADMIN'])`
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. API Server starten
+pnpm dev
+
+# 3. Admin-Endpoints testen (in separatem Terminal):
+
+# GET /api/admin/users (nur ADMIN)
+curl http://localhost:3001/api/admin/users \
+  -H "Authorization: Bearer <USER_TOKEN>"
+# Erwartet: 403 Forbidden
+
+curl http://localhost:3001/api/admin/users \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+# Erwartet: 200 OK mit User-Liste
+
+# PUT /api/admin/users/:id/role (nur ADMIN)
+curl -X PUT http://localhost:3001/api/admin/users/<USER_ID>/role \
+  -H "Authorization: Bearer <EVENT_MANAGER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"EVENT_MANAGER"}'
+# Erwartet: 403 Forbidden
+
+curl -X PUT http://localhost:3001/api/admin/users/<USER_ID>/role \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"EVENT_MANAGER"}'
+# Erwartet: 200 OK, User-Rolle geändert
+
+# GET /api/admin/stats (nur ADMIN)
+curl http://localhost:3001/api/admin/stats \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+# Erwartet: 200 OK mit Statistiken
+
+# DELETE /api/admin/users/:id (nur ADMIN)
+curl -X DELETE http://localhost:3001/api/admin/users/<USER_ID> \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+# Erwartet: 200 OK, User gelöscht (Soft Delete)
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Alle Admin-Endpoints geben 403 für Nicht-Admin zurück
+- ✅ Alle Admin-Endpoints akzeptieren nur ADMIN-Token
+- ✅ User-Rolle kann geändert werden (nur durch Admin)
+- ✅ Statistiken werden zurückgegeben
+- ✅ User kann gelöscht werden (Soft Delete)
+
 **Dauer**: ~2 Stunden
 
 ---
@@ -364,6 +668,43 @@ export function requireRole(
 **Datei erweitern**: `packages/api/src/domain/validation/userSchemas.ts`
 - `updateUserRoleSchema` hinzufügen
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. Validation-Tests schreiben
+pnpm test -- eventSchemas.test.ts
+pnpm test -- userSchemas.test.ts
+
+# 3. Manuell testen: Ungültige Daten sollten abgelehnt werden
+curl -X POST http://localhost:3001/api/events \
+  -H "Authorization: Bearer <EVENT_MANAGER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":""}'  # Leerer Titel
+# Erwartet: 400 Bad Request mit Validierungsfehler
+
+curl -X POST http://localhost:3001/api/events \
+  -H "Authorization: Bearer <EVENT_MANAGER_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test"}'  # Fehlendes startDate
+# Erwartet: 400 Bad Request mit Validierungsfehler
+
+curl -X PUT http://localhost:3001/api/admin/users/<USER_ID>/role \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"INVALID_ROLE"}'
+# Erwartet: 400 Bad Request mit Validierungsfehler
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Validation-Tests bestehen
+- ✅ Ungültige Event-Daten werden abgelehnt (400 Bad Request)
+- ✅ Ungültige Rollen werden abgelehnt (400 Bad Request)
+- ✅ Validierungsfehler enthalten klare Fehlermeldungen
+
 **Dauer**: ~1 Stunde
 
 ---
@@ -383,6 +724,39 @@ export function requireRole(
 1. Event Routes registrieren
 2. Admin Routes registrieren
 3. Dependencies für Event-UseCases hinzufügen
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/api
+pnpm build
+
+# 2. API Server starten und prüfen, dass alle Routes registriert sind
+pnpm dev
+
+# 3. Routes prüfen (in separatem Terminal):
+curl http://localhost:3001/api/events
+# Erwartet: 200 OK (Route existiert)
+
+curl http://localhost:3001/api/admin/users \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+# Erwartet: 200 OK (Route existiert)
+
+# 4. Prüfen, dass keine Route-Fehler in der Konsole erscheinen
+#    (z.B. "Route not found" oder Middleware-Fehler)
+
+# 5. Health Check sollte weiterhin funktionieren
+curl http://localhost:3001/health
+# Erwartet: 200 OK
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ API Server startet ohne Fehler
+- ✅ Event-Routes sind unter `/api/events` erreichbar
+- ✅ Admin-Routes sind unter `/api/admin/*` erreichbar
+- ✅ Bestehende Routes funktionieren weiterhin
+- ✅ Keine Route-Konflikte oder Middleware-Fehler
 
 **Dauer**: ~30 Minuten
 
@@ -424,6 +798,44 @@ export function requireRole(
 - `deleteUser(id)`
 - `getAdminStats()`
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/web
+pnpm build
+
+# 2. Types prüfen: API-Clients sollten korrekte Types haben
+#    (IDE sollte Autocomplete für Event und Admin-Funktionen zeigen)
+
+# 3. Manuell testen in Browser Console (nach Login):
+import { getAllEvents, createEvent } from '@/lib/api/events';
+import { getAllUsers, updateUserRole } from '@/lib/api/admin';
+
+// Events API sollte verfügbar sein
+console.log(typeof getAllEvents); // "function"
+
+// Admin API sollte verfügbar sein
+console.log(typeof getAllUsers); // "function"
+
+# 4. API-Calls sollten korrekte Types zurückgeben
+const events = await getAllEvents();
+// events sollte Event[] Type haben
+
+# 5. Fehlerbehandlung testen (403 Forbidden sollte korrekt behandelt werden)
+try {
+  await createEvent({...}); // Als USER
+} catch (error) {
+  // Sollte 403 Fehler korrekt behandeln
+}
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ API-Clients haben korrekte Types (keine `any` Types)
+- ✅ Autocomplete funktioniert in IDE
+- ✅ API-Calls geben korrekt typisierte Responses zurück
+- ✅ Fehlerbehandlung funktioniert (403, 404, etc.)
+
 **Dauer**: ~1 Stunde
 
 ---
@@ -447,6 +859,38 @@ export function requireRole(
   isEventManager(): boolean
   canManageEvents(): boolean
   ```
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/web
+pnpm build
+
+# 2. In Browser Console testen (nach Login):
+import { useAuth } from '@/lib/auth/AuthContext';
+
+// In React-Komponente:
+const { user, isAdmin, isEventManager, canManageEvents } = useAuth();
+
+console.log('isAdmin:', isAdmin()); // true/false basierend auf Rolle
+console.log('isEventManager:', isEventManager()); // true für EVENT_MANAGER oder ADMIN
+console.log('canManageEvents:', canManageEvents()); // true für EVENT_MANAGER oder ADMIN
+
+# 3. Testen mit verschiedenen Rollen:
+#    - Als USER: isAdmin() = false, canManageEvents() = false
+#    - Als EVENT_MANAGER: isAdmin() = false, canManageEvents() = true
+#    - Als ADMIN: isAdmin() = true, canManageEvents() = true
+
+# 4. Prüfen, dass user.role korrekt gesetzt ist
+console.log('User role:', user?.role); // Sollte 'USER' | 'EVENT_MANAGER' | 'ADMIN' sein
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ `isAdmin()` gibt `true` nur für ADMIN zurück
+- ✅ `isEventManager()` gibt `true` für EVENT_MANAGER und ADMIN zurück
+- ✅ `canManageEvents()` gibt `true` für EVENT_MANAGER und ADMIN zurück
+- ✅ `user.role` ist korrekt gesetzt nach Login
 
 **Dauer**: ~30 Minuten
 
@@ -480,6 +924,46 @@ export function requireRole(
 - `packages/web/components/events/EventForm.tsx` - Event-Formular (Create/Edit)
 - `packages/web/components/events/EventDetail.tsx` - Event-Details
 
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/web
+pnpm build
+
+# 2. Next.js Dev Server starten
+pnpm dev
+
+# 3. Manuell im Browser testen:
+#    - Navigiere zu /events
+#    - Event-Liste sollte angezeigt werden
+#    - Event-Cards sollten korrekt gerendert werden
+#    - Klick auf Event sollte zu Event-Details führen
+#    - Event-Details sollten alle Informationen anzeigen
+
+# 4. Als EVENT_MANAGER/ADMIN testen:
+#    - "Event erstellen" Button sollte sichtbar sein
+#    - Event-Formular sollte funktionieren
+#    - Event kann erstellt werden
+
+# 5. Als USER testen:
+#    - "Event erstellen" Button sollte NICHT sichtbar sein
+#    - Event-Details sollten lesbar sein
+
+# 6. Browser Console prüfen:
+#    - Keine React-Warnings oder Fehler
+#    - Keine TypeScript-Fehler
+#    - API-Calls sollten erfolgreich sein (200 OK)
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Next.js Dev Server startet ohne Fehler
+- ✅ Event-Liste wird korrekt angezeigt
+- ✅ Event-Details werden korrekt angezeigt
+- ✅ Event-Formular funktioniert (für EVENT_MANAGER/ADMIN)
+- ✅ Rollenbasierte UI funktioniert (Buttons nur für berechtigte User)
+- ✅ Keine Console-Fehler oder Warnings
+
 **Dauer**: ~4 Stunden
 
 ---
@@ -500,6 +984,45 @@ export function requireRole(
 - `packages/web/components/admin/UserTable.tsx` - User-Tabelle
 - `packages/web/components/admin/UserRoleSelector.tsx` - Rollen-Auswahl
 - `packages/web/components/admin/AdminStats.tsx` - Statistiken
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/web
+pnpm build
+
+# 2. Next.js Dev Server starten
+pnpm dev
+
+# 3. Als ADMIN im Browser testen:
+#    - Navigiere zu /admin
+#    - Admin-Dashboard sollte angezeigt werden
+#    - User-Management sollte verfügbar sein
+#    - User-Tabelle sollte alle User anzeigen
+#    - Rollen-Auswahl sollte funktionieren
+#    - Statistiken sollten angezeigt werden
+
+# 4. Als USER testen:
+#    - /admin sollte nicht zugänglich sein (Redirect oder 403)
+#    - Admin-Link sollte NICHT in Navigation sichtbar sein
+
+# 5. User-Rolle ändern testen:
+#    - Als ADMIN: User-Rolle ändern
+#    - Prüfen, dass Änderung in Datenbank gespeichert wird
+#    - Prüfen, dass UI aktualisiert wird
+
+# 6. Browser Console prüfen:
+#    - Keine React-Warnings oder Fehler
+#    - API-Calls sollten erfolgreich sein
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Admin-Dashboard ist nur für ADMIN zugänglich
+- ✅ User-Management funktioniert (Rolle ändern, User löschen)
+- ✅ Statistiken werden korrekt angezeigt
+- ✅ Rollenbasierte Navigation funktioniert (Admin-Link nur für ADMIN)
+- ✅ Keine Console-Fehler oder Warnings
 
 **Dauer**: ~4 Stunden
 
@@ -529,6 +1052,44 @@ export function requireRole(
 - `packages/web/app/events/new/page.tsx` - Event erstellen
 - `packages/web/app/events/[id]/page.tsx` - Event-Details
 - `packages/web/app/events/[id]/edit/page.tsx` - Event bearbeiten
+
+**Verifizierung**:
+```bash
+# 1. TypeScript-Kompilierung prüfen
+cd packages/web
+pnpm build
+
+# 2. Next.js Dev Server starten
+pnpm dev
+
+# 3. Navigation testen:
+#    - Events-Link sollte für alle sichtbar sein
+#    - Admin-Link sollte nur für ADMIN sichtbar sein
+#    - "Event erstellen" Button sollte nur für EVENT_MANAGER/ADMIN sichtbar sein
+
+# 4. Routing testen:
+#    - /events → Event-Liste
+#    - /events/new → Event erstellen (nur EVENT_MANAGER/ADMIN)
+#    - /events/[id] → Event-Details
+#    - /events/[id]/edit → Event bearbeiten (nur Organizer/ADMIN)
+#    - /admin → Admin-Dashboard (nur ADMIN)
+#    - /admin/users → User-Management (nur ADMIN)
+
+# 5. Rollenbasierte Redirects testen:
+#    - USER versucht /events/new → sollte zu Login oder Homepage redirecten
+#    - USER versucht /admin → sollte zu Login oder Homepage redirecten
+
+# 6. Browser Console prüfen:
+#    - Keine Routing-Fehler
+#    - Keine 404-Fehler für existierende Routes
+```
+
+**Erwartete Ergebnisse**:
+- ✅ TypeScript-Kompilierung erfolgreich
+- ✅ Alle Routes sind korrekt konfiguriert
+- ✅ Navigation zeigt/versteckt Links basierend auf Rolle
+- ✅ Rollenbasierte Redirects funktionieren
+- ✅ Keine Routing-Fehler oder 404s
 
 **Dauer**: ~2 Stunden
 
@@ -564,6 +1125,43 @@ export function requireRole(
 **Erweiterte Tests**:
 - `packages/api/src/__tests__/integration/auth.test.ts` - Rollenprüfung testen
 
+**Verifizierung**:
+```bash
+# 1. Alle Tests ausführen
+cd packages/api
+pnpm test
+
+# 2. Spezifische Test-Suites ausführen:
+pnpm test -- rbac.test.ts
+pnpm test -- events.test.ts
+pnpm test -- admin.test.ts
+
+# 3. Test-Coverage prüfen (sollte 70%+ für kritische Komponenten sein)
+pnpm test -- --coverage
+
+# 4. Integration-Tests sollten folgende Szenarien abdecken:
+#    - RBAC: USER kann nicht auf EVENT_MANAGER-Routes zugreifen
+#    - RBAC: EVENT_MANAGER kann Events erstellen
+#    - RBAC: ADMIN kann alles
+#    - Events: Organizer kann sein Event bearbeiten
+#    - Events: Andere User können fremde Events nicht bearbeiten
+#    - Admin: Nur ADMIN kann User-Rolle ändern
+#    - Admin: Nur ADMIN kann User löschen
+
+# 5. Edge Cases testen:
+#    - Gelöschter User versucht zu authentifizieren
+#    - User mit geänderter Rolle (Token noch alt)
+#    - Event-Organizer wird gelöscht
+```
+
+**Erwartete Ergebnisse**:
+- ✅ Alle Tests bestehen (100% Pass-Rate)
+- ✅ Test-Coverage ist 70%+ für kritische Komponenten
+- ✅ RBAC-Tests decken alle Rollen-Kombinationen ab
+- ✅ Event-Tests decken alle CRUD-Operationen ab
+- ✅ Admin-Tests decken alle Admin-Funktionen ab
+- ✅ Edge Cases sind abgedeckt
+
 **Dauer**: ~3 Stunden
 
 ---
@@ -581,6 +1179,56 @@ export function requireRole(
 **E2E Tests**:
 - `packages/web/e2e/admin.spec.ts` - Admin-Funktionalitäten
 - `packages/web/e2e/events.spec.ts` - Event-Management
+
+**Verifizierung**:
+```bash
+# 1. E2E-Tests ausführen
+cd packages/web
+pnpm test:e2e
+
+# 2. Spezifische Test-Suites ausführen:
+pnpm test:e2e -- admin.spec.ts
+pnpm test:e2e -- events.spec.ts
+
+# 3. Tests sollten folgende User-Flows abdecken:
+
+# Admin-Flow:
+#    - Login als ADMIN
+#    - Navigiere zu /admin
+#    - Siehe User-Liste
+#    - Ändere User-Rolle
+#    - Prüfe, dass Änderung gespeichert wurde
+#    - Siehe Statistiken
+
+# Event-Manager-Flow:
+#    - Login als EVENT_MANAGER
+#    - Navigiere zu /events
+#    - Klicke "Event erstellen"
+#    - Fülle Event-Formular aus
+#    - Erstelle Event
+#    - Prüfe, dass Event in Liste erscheint
+#    - Bearbeite Event
+#    - Prüfe, dass Änderung gespeichert wurde
+
+# User-Flow:
+#    - Login als USER
+#    - Navigiere zu /events
+#    - Prüfe, dass "Event erstellen" Button NICHT sichtbar ist
+#    - Versuche /events/new zu öffnen → sollte redirecten
+#    - Versuche /admin zu öffnen → sollte redirecten
+
+# 4. Visual Regression Tests (optional):
+#    - Screenshots vergleichen
+#    - UI sollte konsistent sein
+```
+
+**Erwartete Ergebnisse**:
+- ✅ Alle E2E-Tests bestehen
+- ✅ Admin-Flow funktioniert komplett
+- ✅ Event-Manager-Flow funktioniert komplett
+- ✅ User-Flow zeigt korrekte Einschränkungen
+- ✅ Rollenbasierte UI funktioniert korrekt
+- ✅ Keine flaky Tests (Tests sollten konsistent sein)
 
 **Dauer**: ~2 Stunden
 
@@ -614,6 +1262,42 @@ export function requireRole(
 - Test-User mit `EVENT_MANAGER` Rolle erstellen
 - Test-Events erstellen
 
+**Verifizierung**:
+```bash
+# 1. Seed-Daten ausführen
+cd packages/database
+pnpm db:seed
+
+# 2. Prisma Studio öffnen und prüfen:
+pnpm db:studio
+
+# 3. In Prisma Studio prüfen:
+#    - Mindestens 1 User mit EVENT_MANAGER Rolle existiert
+#    - Mindestens 1 User mit ADMIN Rolle existiert
+#    - Mindestens 3 Test-Events existieren
+#    - Events haben verschiedene Organizer (EVENT_MANAGER und ADMIN)
+#    - Events haben verschiedene Start-Daten
+
+# 4. Test-User-Credentials dokumentieren:
+#    - EVENT_MANAGER: email=?, password=?
+#    - ADMIN: email=?, password=?
+#    (Diese sollten in README oder Test-Dokumentation stehen)
+
+# 5. Manuell testen: Login mit Test-User
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"eventmanager@test.com","password":"test123"}'
+# Sollte Token und User mit EVENT_MANAGER Rolle zurückgeben
+```
+
+**Erwartete Ergebnisse**:
+- ✅ Seed-Script läuft ohne Fehler
+- ✅ Test-User mit EVENT_MANAGER Rolle existiert
+- ✅ Test-User mit ADMIN Rolle existiert
+- ✅ Test-Events existieren mit verschiedenen Organizern
+- ✅ Login mit Test-Usern funktioniert
+- ✅ Test-User haben korrekte Rollen
+
 **Dauer**: ~30 Minuten
 
 ---
@@ -632,6 +1316,47 @@ export function requireRole(
 - `packages/api/README.md` - Admin & Event Endpoints dokumentieren
 - `packages/database/README.md` - Events-Model dokumentieren
 - `AGENTS.md` - RBAC-Regeln dokumentieren
+
+**Verifizierung**:
+```bash
+# 1. Dokumentation lesen und prüfen:
+
+# packages/api/README.md:
+#    - Event-Endpoints sind dokumentiert mit Beispielen
+#    - Admin-Endpoints sind dokumentiert mit Beispielen
+#    - RBAC-Regeln sind erklärt
+#    - Authentifizierung ist dokumentiert
+
+# packages/database/README.md:
+#    - Events-Model ist dokumentiert
+#    - UserRole Enum ist dokumentiert
+#    - Relations sind erklärt
+
+# AGENTS.md:
+#    - RBAC-Regeln sind dokumentiert
+#    - Rollen-Matrix ist vorhanden
+#    - Best Practices für Rollenprüfung sind erklärt
+
+# 2. Dokumentation sollte folgende Informationen enthalten:
+#    - Welche Rollen existieren
+#    - Welche Funktionen jede Rolle hat
+#    - Wie man Rollen in Code prüft
+#    - Beispiele für API-Calls mit verschiedenen Rollen
+#    - Test-User-Credentials
+
+# 3. Prüfen, dass Dokumentation aktuell ist:
+#    - Alle neuen Endpoints sind dokumentiert
+#    - Keine veralteten Informationen
+#    - Code-Beispiele funktionieren noch
+```
+
+**Erwartete Ergebnisse**:
+- ✅ API-Dokumentation ist vollständig und aktuell
+- ✅ Database-Dokumentation erklärt Events-Model
+- ✅ AGENTS.md enthält RBAC-Regeln
+- ✅ Code-Beispiele funktionieren
+- ✅ Test-User-Credentials sind dokumentiert
+- ✅ Dokumentation ist für neue Entwickler verständlich
 
 **Dauer**: ~1 Stunde
 
@@ -814,6 +1539,139 @@ export function requireRole(
 - [ ] Brauchen wir Event-Kategorien (analog zu Listings)?
 - [ ] Sollen Events mit Listings verknüpft werden können?
 - [ ] Brauchen wir Event-Registrierungen (Teilnehmer)?
+
+---
+
+---
+
+## Verifizierungs-Checkliste (Gesamtübersicht)
+
+Nach Abschluss aller Phasen sollten folgende Checks durchgeführt werden:
+
+### ✅ Datenbank & Schema
+- [ ] Prisma Schema validiert (`pnpm prisma validate`)
+- [ ] Migration erfolgreich angewendet (`pnpm prisma migrate status`)
+- [ ] Prisma Client generiert ohne Fehler (`pnpm db:generate`)
+- [ ] Events-Tabelle existiert in Datenbank
+- [ ] UserRole Enum enthält USER, EVENT_MANAGER, ADMIN
+- [ ] Test-Daten vorhanden (via `pnpm db:seed`)
+
+### ✅ Backend - TypeScript & Build
+- [ ] API Package baut ohne Fehler (`pnpm --filter @sharelocal/api build`)
+- [ ] Shared Package baut ohne Fehler (`pnpm --filter @sharelocal/shared build`)
+- [ ] Database Package baut ohne Fehler (`pnpm --filter @sharelocal/database build`)
+- [ ] Keine TypeScript-Fehler in allen Packages
+- [ ] Alle Types sind korrekt (keine `any` Types)
+
+### ✅ Backend - RBAC & Security
+- [ ] RBAC Middleware funktioniert (403 für falsche Rolle)
+- [ ] Auth Middleware funktioniert (401 für fehlendes Token)
+- [ ] Event-Routes sind korrekt geschützt
+- [ ] Admin-Routes sind korrekt geschützt (nur ADMIN)
+- [ ] Organizer-Check funktioniert (nur Organizer kann Event bearbeiten)
+
+### ✅ Backend - API Endpoints
+- [ ] `GET /api/events` - Liste aller Events (öffentlich)
+- [ ] `GET /api/events/:id` - Event-Details (öffentlich)
+- [ ] `POST /api/events` - Event erstellen (EVENT_MANAGER/ADMIN)
+- [ ] `PUT /api/events/:id` - Event aktualisieren (Organizer/ADMIN)
+- [ ] `DELETE /api/events/:id` - Event löschen (Organizer/ADMIN)
+- [ ] `GET /api/admin/users` - User-Liste (ADMIN)
+- [ ] `PUT /api/admin/users/:id/role` - Rolle ändern (ADMIN)
+- [ ] `DELETE /api/admin/users/:id` - User löschen (ADMIN)
+- [ ] `GET /api/admin/stats` - Statistiken (ADMIN)
+
+### ✅ Backend - Tests
+- [ ] Alle Unit-Tests bestehen (`pnpm test`)
+- [ ] Alle Integration-Tests bestehen
+- [ ] RBAC-Tests bestehen (alle Rollen-Kombinationen)
+- [ ] Event-Tests bestehen (CRUD-Operationen)
+- [ ] Admin-Tests bestehen (alle Admin-Funktionen)
+- [ ] Test-Coverage ist 70%+ für kritische Komponenten
+
+### ✅ Frontend - Build & Types
+- [ ] Web Package baut ohne Fehler (`pnpm --filter @sharelocal/web build`)
+- [ ] Keine TypeScript-Fehler
+- [ ] API-Clients haben korrekte Types
+- [ ] Auth Context funktioniert korrekt
+
+### ✅ Frontend - UI & Navigation
+- [ ] Event-Liste wird angezeigt
+- [ ] Event-Details werden angezeigt
+- [ ] Event-Formular funktioniert (für EVENT_MANAGER/ADMIN)
+- [ ] Admin-Dashboard ist nur für ADMIN zugänglich
+- [ ] User-Management funktioniert (für ADMIN)
+- [ ] Rollenbasierte Navigation funktioniert
+- [ ] Rollenbasierte UI-Elemente werden korrekt angezeigt/versteckt
+
+### ✅ Frontend - E2E Tests
+- [ ] Alle E2E-Tests bestehen (`pnpm test:e2e`)
+- [ ] Admin-Flow funktioniert komplett
+- [ ] Event-Manager-Flow funktioniert komplett
+- [ ] User-Flow zeigt korrekte Einschränkungen
+- [ ] Keine flaky Tests
+
+### ✅ Dokumentation
+- [ ] API-Dokumentation ist vollständig
+- [ ] Database-Dokumentation erklärt Events-Model
+- [ ] AGENTS.md enthält RBAC-Regeln
+- [ ] Code-Beispiele funktionieren
+- [ ] Test-User-Credentials sind dokumentiert
+
+### ✅ Manuelle Tests (Smoke Tests)
+
+**Als USER:**
+- [ ] Kann Events anzeigen
+- [ ] Kann Event-Details anzeigen
+- [ ] Kann NICHT Events erstellen (Button nicht sichtbar)
+- [ ] Kann NICHT auf /admin zugreifen
+- [ ] Kann NICHT fremde Events bearbeiten
+
+**Als EVENT_MANAGER:**
+- [ ] Kann Events anzeigen
+- [ ] Kann Events erstellen
+- [ ] Kann eigene Events bearbeiten
+- [ ] Kann NICHT fremde Events bearbeiten
+- [ ] Kann NICHT auf /admin zugreifen
+
+**Als ADMIN:**
+- [ ] Kann Events anzeigen
+- [ ] Kann Events erstellen
+- [ ] Kann alle Events bearbeiten
+- [ ] Kann auf /admin zugreifen
+- [ ] Kann User-Rollen ändern
+- [ ] Kann User löschen
+- [ ] Kann Statistiken anzeigen
+
+---
+
+## Quick Verification Commands
+
+```bash
+# 1. Alle Packages bauen
+pnpm build
+
+# 2. Alle Tests ausführen
+pnpm test
+pnpm test:e2e
+
+# 3. Schema validieren
+cd packages/database
+pnpm prisma validate
+pnpm db:generate
+
+# 4. API Server starten und testen
+cd packages/api
+pnpm dev
+# In separatem Terminal:
+curl http://localhost:3001/api/events
+curl http://localhost:3001/api/admin/users -H "Authorization: Bearer <ADMIN_TOKEN>"
+
+# 5. Frontend starten und manuell testen
+cd packages/web
+pnpm dev
+# Browser: http://localhost:3000
+```
 
 ---
 

@@ -21,7 +21,8 @@
       }
     },
     "upload": {
-      "target": "temporary-public-storage"
+      "target": "temporary-public-storage",
+      "githubAppToken": "$LHCI_GITHUB_APP_TOKEN"
     }
   }
 }
