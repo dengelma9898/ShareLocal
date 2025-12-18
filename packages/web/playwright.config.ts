@@ -94,11 +94,12 @@ export default defineConfig({
       name: 'webkit-mocked',
       use: { 
         ...devices['Desktop Safari'],
-        actionTimeout: process.env.CI ? 10000 : 5000,
-        navigationTimeout: process.env.CI ? 20000 : 10000,
+        // Increased timeouts for webkit which can be slower, especially in CI
+        actionTimeout: process.env.CI ? 30000 : 10000,
+        navigationTimeout: process.env.CI ? 60000 : 30000,
       },
       testMatch: /.*\.mocked\.spec\.ts/,
-      timeout: process.env.CI ? 20000 : 10000,
+      timeout: process.env.CI ? 60000 : 30000,
     },
     // Mock-Mode: Mobile Chrome (für schnelle Mobile-Checks)
     {

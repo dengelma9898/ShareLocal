@@ -1,16 +1,16 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "cd packages/web && pnpm dev",
-      "startServerReadyPattern": "Ready in|Local:",
-      "startServerReadyTimeout": 120000,
+      "startServerCommand": "pnpm --filter @sharelocal/web dev",
+      "startServerReadyPattern": "Ready in",
+      "startServerReadyTimeout": 60000,
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/listings",
         "http://localhost:3000/login",
         "http://localhost:3000/register"
       ],
-      "numberOfRuns": 1
+      "numberOfRuns": 3
     },
     "assert": {
       "assertions": {
