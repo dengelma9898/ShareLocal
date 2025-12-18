@@ -76,3 +76,6 @@ playwright/.cache/
 
 # TypeScript
 *.tsbuildinfo
+
+# Lighthouse CI
+.lighthouseci/

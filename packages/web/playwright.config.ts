@@ -27,6 +27,7 @@ export default defineConfig({
   },
   
   projects: [
+    // Real Mode: Chromium (Chrome/Edge)
     {
       name: 'chromium',
       use: { 
@@ -37,7 +38,80 @@ export default defineConfig({
       },
       testIgnore: /.*\.mocked\.spec\.ts/, // Ignoriere Mock-Tests im Real-Mode
     },
-    // Mock-Mode Projekt (keine API nötig) - kürzere Timeouts
+    // Real Mode: Firefox
+    {
+      name: 'firefox',
+      use: { 
+        ...devices['Desktop Firefox'],
+        actionTimeout: process.env.CI ? 30000 : 10000,
+        navigationTimeout: process.env.CI ? 60000 : 30000,
+      },
+      testIgnore: /.*\.mocked\.spec\.ts/,
+    },
+    // Real Mode: WebKit (Safari)
+    {
+      name: 'webkit',
+      use: { 
+        ...devices['Desktop Safari'],
+        actionTimeout: process.env.CI ? 30000 : 10000,
+        navigationTimeout: process.env.CI ? 60000 : 30000,
+      },
+      testIgnore: /.*\.mocked\.spec\.ts/,
+    },
+    // Real Mode: Mobile Chrome (Android)
+    {
+      name: 'mobile-chrome',
+      use: { 
+        ...devices['Pixel 5'],
+        actionTimeout: process.env.CI ? 30000 : 10000,
+        navigationTimeout: process.env.CI ? 60000 : 30000,
+      },
+      testIgnore: /.*\.mocked\.spec\.ts/,
+    },
+    // Real Mode: Mobile Safari (iOS)
+    {
+      name: 'mobile-safari',
+      use: { 
+        ...devices['iPhone 13'],
+        actionTimeout: process.env.CI ? 30000 : 10000,
+        navigationTimeout: process.env.CI ? 60000 : 30000,
+      },
+      testIgnore: /.*\.mocked\.spec\.ts/,
+    },
+    // Mock-Mode: Firefox (für schnelle Cross-Browser-Checks)
+    {
+      name: 'firefox-mocked',
+      use: { 
+        ...devices['Desktop Firefox'],
+        actionTimeout: process.env.CI ? 10000 : 5000,
+        navigationTimeout: process.env.CI ? 20000 : 10000,
+      },
+      testMatch: /.*\.mocked\.spec\.ts/,
+      timeout: process.env.CI ? 20000 : 10000,
+    },
+    // Mock-Mode: WebKit/Safari (für schnelle Cross-Browser-Checks)
+    {
+      name: 'webkit-mocked',
+      use: { 
+        ...devices['Desktop Safari'],
+        actionTimeout: process.env.CI ? 10000 : 5000,
+        navigationTimeout: process.env.CI ? 20000 : 10000,
+      },
+      testMatch: /.*\.mocked\.spec\.ts/,
+      timeout: process.env.CI ? 20000 : 10000,
+    },
+    // Mock-Mode: Mobile Chrome (für schnelle Mobile-Checks)
+    {
+      name: 'mobile-chrome-mocked',
+      use: { 
+        ...devices['Pixel 5'],
+        actionTimeout: process.env.CI ? 10000 : 5000,
+        navigationTimeout: process.env.CI ? 20000 : 10000,
+      },
+      testMatch: /.*\.mocked\.spec\.ts/,
+      timeout: process.env.CI ? 20000 : 10000,
+    },
+    // Mock-Mode Projekt (keine API nötig) - kürzere Timeouts, nur Chromium für Geschwindigkeit
     {
       name: 'chromium-mocked',
       use: { 

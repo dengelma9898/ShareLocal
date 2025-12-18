@@ -2,58 +2,124 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    /* MVP Design System - Phase 1: Foundation */
+    /* Primary Colors - Olive Green (kräftiger für bessere Sichtbarkeit) */
+    --primary: 130 50% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-dark: 130 55% 35%;
+    --primary-light: 130 45% 55%;
+    
+    /* Secondary Colors - Warm Beige */
+    --secondary: 35 25% 90%;
+    --secondary-foreground: 30 10% 15%;
+    
+    /* Accent - Terracotta */
+    --accent: 18 65% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Background & Foreground - Warm Beige Background */
+    --background: 35 20% 95%;
+    --foreground: 30 10% 15%;
+    
+    /* Card - Warm Beige Card Background */
+    --card: 35 25% 92%;
+    --card-foreground: 30 10% 15%;
+    
+    /* Popover - Warm Beige */
+    --popover: 35 25% 92%;
+    --popover-foreground: 30 10% 15%;
+    
+    /* Muted */
+    --muted: 30 8% 45%;
+    --muted-foreground: 30 10% 15%;
+    
+    /* Status Colors */
+    --success: 130 40% 50%;
+    --success-foreground: 0 0% 100%;
+    --error: 5 70% 55%;
+    --error-foreground: 0 0% 100%;
+    --warning: 35 70% 60%;
+    --warning-foreground: 30 10% 15%;
+    --info: 200 50% 50%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Destructive (using error color) */
+    --destructive: 5 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border & Input - Warm Beige Borders */
+    --border: 35 25% 80%;
+    --input: 35 25% 80%;
+    --ring: 130 50% 42%;
+    
+    /* Radius */
     --radius: 0.5rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    
+    /* Chart Colors (keeping for future use) */
+    --chart-1: 130 40% 50%;
+    --chart-2: 18 65% 55%;
+    --chart-3: 35 70% 60%;
+    --chart-4: 200 50% 50%;
+    --chart-5: 30 8% 45%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Dark Mode - MVP Design System */
+    /* Background & Foreground */
+    --background: 30 15% 8%;
+    --foreground: 35 10% 95%;
+    
+    /* Card */
+    --card: 30 12% 12%;
+    --card-foreground: 35 10% 95%;
+    
+    /* Popover */
+    --popover: 30 12% 12%;
+    --popover-foreground: 35 10% 95%;
+    
+    /* Primary - Olive Green (lighter for dark mode) */
+    --primary: 130 40% 55%;
+    --primary-foreground: 30 10% 15%;
+    --primary-dark: 130 45% 50%;
+    --primary-light: 130 35% 65%;
+    
+    /* Secondary */
+    --secondary: 30 12% 20%;
+    --secondary-foreground: 35 10% 95%;
+    
+    /* Accent */
+    --accent: 18 60% 60%;
+    --accent-foreground: 30 10% 15%;
+    
+    /* Muted */
+    --muted: 30 8% 35%;
+    --muted-foreground: 35 10% 75%;
+    
+    /* Status Colors */
+    --success: 130 40% 55%;
+    --success-foreground: 30 10% 15%;
+    --error: 5 65% 60%;
+    --error-foreground: 0 0% 100%;
+    --warning: 35 65% 65%;
+    --warning-foreground: 30 10% 15%;
+    --info: 200 50% 55%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Destructive */
+    --destructive: 5 65% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border & Input */
+    --border: 30 10% 20%;
+    --input: 30 10% 20%;
+    --ring: 130 40% 55%;
+    
+    /* Chart Colors */
+    --chart-1: 130 40% 55%;
+    --chart-2: 18 60% 60%;
+    --chart-3: 35 65% 65%;
+    --chart-4: 200 50% 55%;
+    --chart-5: 30 8% 35%;
   }
 }
 
@@ -61,9 +127,162 @@
   * {
     border-color: hsl(var(--border));
   }
+  
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    /* Typography System - Phase 1 */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    letter-spacing: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Typography Scale */
+  h1 {
+    font-size: 2.25rem; /* 36px */
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  
+  h2 {
+    font-size: 1.875rem; /* 30px */
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  
+  h3 {
+    font-size: 1.5rem; /* 24px */
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  
+  h4 {
+    font-size: 1.25rem; /* 20px */
+    line-height: 1.5;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+  
+  /* Responsive Typography - Tablet */
+  @media (min-width: 640px) {
+    h1 {
+      font-size: 2.5rem; /* 40px */
+    }
+    h2 {
+      font-size: 2rem; /* 32px */
+    }
+    h3 {
+      font-size: 1.625rem; /* 26px */
+    }
+  }
+  
+  /* Responsive Typography - Desktop */
+  @media (min-width: 1024px) {
+    h1 {
+      font-size: 2.75rem; /* 44px */
+    }
+    h2 {
+      font-size: 2.25rem; /* 36px */
+    }
+    h3 {
+      font-size: 1.75rem; /* 28px */
+    }
+  }
+  
+  /* Container Utility - Max-Width 1280px für Desktop */
+  .container {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  /* Screen Reader Only - für Skip Links und Accessibility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: inherit;
+    margin: inherit;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+
+/* Phase 4: Animationen & Micro-Interactions */
+@layer utilities {
+  /* Basis-Animationen */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scale {
+    from {
+      transform: scale(0.95);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  /* Animation Classes */
+  .animate-fade-in {
+    animation: fadeIn 200ms ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 300ms ease-out;
+  }
+
+  .animate-scale {
+    animation: scale 200ms ease-out;
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

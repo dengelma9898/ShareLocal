@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { getConversations, Conversation } from '@/lib/api/conversations';
@@ -30,6 +30,7 @@ export default function ConversationsPage() {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'my-offers' | 'my-interests'>('my-offers');
+  const [hasError, setHasError] = useState(false);
 
   // Fetch conversations
   const {
@@ -38,6 +39,7 @@ export default function ConversationsPage() {
     isError,
     error,
     refetch,
+    isFetching,
   } = useQuery({
     queryKey: ['conversations'],
     queryFn: () => getConversations(50, 0),
@@ -45,6 +47,16 @@ export default function ConversationsPage() {
   });
 
   const conversations = conversationsData?.data || [];
+
+  // Track error state - set to true when error occurs, reset only on successful fetch
+  useEffect(() => {
+    if (isError) {
+      setHasError(true);
+    } else if (conversationsData && !isFetching) {
+      // Reset error state only when we have data and fetch is complete
+      setHasError(false);
+    }
+  }, [isError, conversationsData, isFetching]);
 
   // Separate conversations: my offers vs my interests
   // My offers: conversations where I am the listing owner
@@ -120,17 +132,8 @@ export default function ConversationsPage() {
         <p className="text-muted-foreground">Verwalte deine Konversationen</p>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <Card>
-          <CardContent className="pt-6 flex items-center justify-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Error State */}
-      {isError && (
+      {/* Error State - hat absolute Priorität, bleibt IMMER sichtbar auch während Refetch */}
+      {hasError && (
         <Card>
           <CardHeader>
             <CardTitle>Fehler beim Laden</CardTitle>
@@ -139,13 +142,29 @@ export default function ConversationsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => refetch()}>Erneut versuchen</Button>
+            <Button 
+              onClick={() => refetch()} 
+              isLoading={isFetching}
+              aria-busy={isFetching}
+              aria-label={isFetching ? 'Wird geladen...' : 'Erneut versuchen'}
+            >
+              Erneut versuchen
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Empty State */}
-      {!isLoading && !isError && conversations.length === 0 && (
+      {/* Loading State - nur wenn KEIN Fehler und initiales Laden */}
+      {!hasError && isLoading && !isFetching && (
+        <Card aria-busy="true" aria-live="polite" aria-label="Nachrichten werden geladen">
+          <CardContent className="pt-6 flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State - nur wenn KEIN Fehler */}
+      {!hasError && !isLoading && conversations.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Inbox className="h-16 w-16 text-muted-foreground mb-4" />
@@ -163,8 +182,8 @@ export default function ConversationsPage() {
         </Card>
       )}
 
-      {/* Conversations with Tabs */}
-      {!isLoading && !isError && conversations.length > 0 && (
+      {/* Conversations with Tabs - nur wenn KEIN Fehler */}
+      {!hasError && !isLoading && conversations.length > 0 && (
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'my-offers' | 'my-interests')}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="my-offers" className="flex items-center gap-2">

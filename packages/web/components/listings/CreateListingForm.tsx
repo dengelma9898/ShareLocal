@@ -387,7 +387,7 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="pricePerDay"
@@ -490,6 +490,7 @@ export function CreateListingForm({ onSubmit }: CreateListingFormProps) {
                         size="sm"
                         className="absolute top-2 right-2"
                         onClick={handleRemoveImage}
+                        aria-label="Bild entfernen"
                       >
                         <X className="h-4 w-4" />
                       </Button>

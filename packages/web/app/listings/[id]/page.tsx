@@ -167,9 +167,9 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
         Zurück
       </Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-6">
           {/* Image Gallery */}
           <Card>
             <div className="relative w-full aspect-video bg-muted rounded-t-lg overflow-hidden">
@@ -294,7 +294,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
               )}
 
               {/* Contact Button (Mobile) */}
-              <div className="lg:hidden">
+              <div className="md:hidden">
                 <Button
                   className="w-full"
                   size="lg"
@@ -319,7 +319,7 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="md:col-span-1 space-y-6">
           {/* Owner Card */}
           {listing.owner ? (
             <OwnerCard owner={listing.owner} />
@@ -331,8 +331,8 @@ export default function ListingDetailPage({ params }: { params: Promise<{ id: st
             </Card>
           )}
 
-          {/* Contact Button (Desktop) */}
-          <Card className="hidden lg:block">
+          {/* Contact Button (Tablet/Desktop) */}
+          <Card className="hidden md:block">
             <CardContent className="pt-6">
               <Button
                 className="w-full"

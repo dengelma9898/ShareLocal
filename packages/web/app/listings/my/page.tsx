@@ -3,7 +3,7 @@
 // My Listings Page
 // Zeigt alle eigenen Listings mit Edit/Delete Optionen
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -35,6 +35,7 @@ export default function MyListingsPage() {
   const [searchValue, setSearchValue] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [listingToDelete, setListingToDelete] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
 
   // Redirect if not authenticated
   if (!authLoading && !isAuthenticated) {
@@ -49,11 +50,22 @@ export default function MyListingsPage() {
     isError,
     error,
     refetch,
+    isFetching,
   } = useQuery({
     queryKey: ['my-listings', searchValue],
     queryFn: () => getMyListings({ search: searchValue || undefined }),
     enabled: isAuthenticated,
   });
+
+  // Track error state - set to true when error occurs, reset only on successful fetch
+  useEffect(() => {
+    if (isError) {
+      setHasError(true);
+    } else if (listingsData && !isFetching) {
+      // Reset error state only when we have data and fetch is complete
+      setHasError(false);
+    }
+  }, [isError, listingsData, isFetching]);
 
   // Delete Mutation
   const deleteMutation = useMutation({
@@ -134,17 +146,8 @@ export default function MyListingsPage() {
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <ListingCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
-      {/* Error State */}
-      {isError && (
+      {/* Error State - hat absolute Priorität, bleibt IMMER sichtbar auch während Refetch */}
+      {hasError && (
         <Card>
           <CardHeader>
             <CardTitle>Fehler beim Laden</CardTitle>
@@ -153,13 +156,34 @@ export default function MyListingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => refetch()}>Erneut versuchen</Button>
+            <Button 
+              onClick={() => refetch()} 
+              isLoading={isFetching}
+              aria-busy={isFetching}
+              aria-label={isFetching ? 'Wird geladen...' : 'Erneut versuchen'}
+            >
+              Erneut versuchen
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Empty State */}
-      {!isLoading && !isError && listings.length === 0 && (
+      {/* Loading State - nur wenn KEIN Fehler und initiales Laden */}
+      {!hasError && isLoading && !isFetching && (
+        <div 
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+          aria-busy="true"
+          aria-live="polite"
+          aria-label="Angebote werden geladen"
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ListingCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State - nur wenn KEIN Fehler */}
+      {!hasError && !isLoading && listings.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <PackageSearch className="h-16 w-16 text-muted-foreground mb-4" />
@@ -179,22 +203,27 @@ export default function MyListingsPage() {
         </Card>
       )}
 
-      {/* Listings Grid */}
-      {!isLoading && !isError && listings.length > 0 && (
+      {/* Listings Grid - nur wenn KEIN Fehler */}
+      {!hasError && !isLoading && listings.length > 0 && (
         <>
           <div className="mb-4 text-sm text-muted-foreground">
             {listings.length} {listings.length === 1 ? 'Angebot' : 'Angebote'}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {listings.map((listing) => (
-              <MyListingCard
+            {listings.map((listing, index) => (
+              <div 
                 key={listing.id}
-                listing={listing}
-                onEdit={(id) => {
-                  router.push(`/listings/${id}/edit`);
-                }}
-                onDelete={handleDeleteClick}
-              />
+                className="animate-slide-up" 
+                style={{ animationDelay: `${Math.min(index * 50, 300)}ms` }}
+              >
+                <MyListingCard
+                  listing={listing}
+                  onEdit={(id) => {
+                    router.push(`/listings/${id}/edit`);
+                  }}
+                  onDelete={handleDeleteClick}
+                />
+              </div>
             ))}
           </div>
         </>

@@ -42,7 +42,7 @@ export function MyListingCard({ listing, onEdit, onDelete }: MyListingCardProps)
   const categoryLabel = categoryLabels[listing.category] || 'Sonstiges';
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col transition-all duration-200 ease-out hover:shadow-lg">
       {/* Image Placeholder */}
       <Link href={`/listings/${listing.id}`}>
         <div className="relative w-full aspect-video bg-muted rounded-t-lg overflow-hidden">

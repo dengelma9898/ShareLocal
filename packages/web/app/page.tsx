@@ -17,12 +17,12 @@ export default function Home() {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-extrabold text-foreground sm:text-5xl mb-4">
+    <div className="container max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-12 md:py-16 lg:py-24">
+      <div className="text-center mb-12 md:mb-16">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-4 md:mb-6">
           ShareLocal
         </h1>
-        <p className="text-xl text-muted-foreground">
+        <p className="text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-2xl mx-auto">
           Digitale Vermittlungsplattform für Ressourcen-Sharing
         </p>
       </div>

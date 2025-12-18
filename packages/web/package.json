@@ -12,6 +12,8 @@
     "test:e2e": "playwright test",
     "test:e2e:mocked": "playwright test --project=chromium-mocked",
     "test:e2e:real": "playwright test --project=chromium",
+    "test:e2e:cross-browser": "playwright test --project=chromium-mocked --project=firefox-mocked --project=webkit-mocked --project=mobile-chrome-mocked",
+    "test:e2e:accessibility": "playwright test accessibility.mocked.spec.ts --project=chromium-mocked",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
@@ -48,6 +50,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.57.0",

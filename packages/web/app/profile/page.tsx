@@ -238,13 +238,13 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Form Fields */}
-              <div className="space-y-4">
+              {/* Form Fields - Zwei-Spalten auf Tablet/Desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                       <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input {...field} disabled={!isEditing} />
@@ -259,7 +259,7 @@ export default function ProfilePage() {
                   control={form.control}
                   name="bio"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                       <FormLabel>Bio (optional)</FormLabel>
                       <FormControl>
                         <Textarea

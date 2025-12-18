@@ -38,19 +38,22 @@ export function Header() {
     conversationsData?.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0) || 0;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 shadow-sm">
+      <div className="container max-w-7xl mx-auto flex h-16 md:h-20 items-center justify-between px-4 md:px-6 lg:px-8">
         {/* Logo & Brand */}
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-primary">ShareLocal</span>
+          <Link 
+            href="/" 
+            className="flex items-center space-x-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+          >
+            <span className="text-xl md:text-2xl font-bold text-primary">ShareLocal</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-6" role="navigation" aria-label="Hauptnavigation">
             <Link
               href="/listings"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-2 py-1"
             >
               Angebote
             </Link>
@@ -58,13 +61,13 @@ export function Header() {
               <>
                 <Link
                   href="/listings/new"
-                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-2 py-1"
                 >
                   Anbieten
                 </Link>
                 <Link
                   href="/conversations"
-                  className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="relative text-sm font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md px-2 py-1"
                 >
                   <span className="flex items-center gap-2">
                     Nachrichten
@@ -91,10 +94,15 @@ export function Header() {
             <>
               {/* Messages Link (Mobile) */}
               <Link href="/conversations" className="md:hidden relative">
-                <Button variant="ghost" size="icon" className="relative">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="relative min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0"
+                  aria-label={`Nachrichten${totalUnreadCount > 0 ? ` (${totalUnreadCount} ungelesen)` : ''}`}
+                >
                   <MessageSquare className="h-5 w-5" />
                   {totalUnreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center" aria-hidden="true">
                       {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                     </span>
                   )}
@@ -104,7 +112,11 @@ export function Header() {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Button 
+                    variant="ghost" 
+                    className="relative h-11 w-11 min-h-[44px] min-w-[44px] rounded-full md:h-10 md:w-10 md:min-h-0 md:min-w-0"
+                    aria-label={`Benutzermenü für ${user?.name || 'Benutzer'}`}
+                  >
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user?.avatar || undefined} alt={user?.name || 'User'} />
                       <AvatarFallback>

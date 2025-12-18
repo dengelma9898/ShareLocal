@@ -42,8 +42,12 @@ export function ListingCard({ listing, showOwner = true }: ListingCardProps) {
   const categoryLabel = categoryLabels[listing.category] || 'Sonstiges';
 
   return (
-    <Link href={`/listings/${listing.id}`} data-testid={`listing-card-${listing.id}`}>
-      <Card className="h-full transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer">
+    <Link 
+      href={`/listings/${listing.id}`} 
+      data-testid={`listing-card-${listing.id}`}
+      className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+    >
+      <Card className="h-full transition-all duration-200 ease-out hover:shadow-lg hover:-translate-y-1 cursor-pointer group">
         {/* Image Placeholder */}
         <div className="relative w-full aspect-video bg-muted rounded-t-lg overflow-hidden">
           {listing.images && listing.images.length > 0 ? (
@@ -73,7 +77,7 @@ export function ListingCard({ listing, showOwner = true }: ListingCardProps) {
         </div>
 
         <CardHeader>
-          <h3 className="text-lg font-semibold line-clamp-2">{listing.title}</h3>
+          <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-primary transition-colors">{listing.title}</h3>
           {listing.description && (
             <p className="text-sm text-muted-foreground line-clamp-2">{listing.description}</p>
           )}

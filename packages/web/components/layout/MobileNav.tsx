@@ -41,14 +41,19 @@ export function MobileNav() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="md:hidden">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="md:hidden min-h-[44px] min-w-[44px]"
+          aria-label="Menü öffnen"
+        >
           <Menu className="h-5 w-5" />
           <span className="sr-only">Menü öffnen</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+      <SheetContent side="right" className="w-[300px] sm:w-[400px] bg-card">
         <SheetHeader>
-          <SheetTitle>ShareLocal</SheetTitle>
+          <SheetTitle className="text-primary">ShareLocal</SheetTitle>
           <SheetDescription>Navigation</SheetDescription>
         </SheetHeader>
 
