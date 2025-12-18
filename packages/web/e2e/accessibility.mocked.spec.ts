@@ -17,9 +17,9 @@ const pagesToTest = [
 ];
 
 test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
-  for (const page of pagesToTest) {
-    test(`${page.name} sollte keine Accessibility-Verletzungen haben`, async ({ page }) => {
-      await page.goto(page.path);
+  for (const pageConfig of pagesToTest) {
+    test(`${pageConfig.name} sollte keine Accessibility-Verletzungen haben`, async ({ page }) => {
+      await page.goto(pageConfig.path);
       
       // Warte auf vollständiges Laden der Seite
       await page.waitForLoadState('networkidle');
@@ -34,11 +34,19 @@ test.describe('Accessibility Tests (WCAG 2.1 AA)', () => {
       
       // Logge Details für Debugging (nur wenn Verletzungen vorhanden)
       if (accessibilityScanResults.violations.length > 0) {
-        console.error(`\n❌ Accessibility-Verletzungen auf ${page.name} (${page.path}):`);
+        console.error(`\n❌ Accessibility-Verletzungen auf ${pageConfig.name} (${pageConfig.path}):`);
         accessibilityScanResults.violations.forEach((violation) => {
           console.error(`  - ${violation.id}: ${violation.description}`);
           console.error(`    Impact: ${violation.impact}`);
           console.error(`    Nodes: ${violation.nodes.length}`);
+          if (violation.nodes.length > 0) {
+            violation.nodes.forEach((node, index) => {
+              console.error(`    Node ${index + 1}:`, node.html);
+              if (node.failureSummary) {
+                console.error(`      Failure: ${node.failureSummary}`);
+              }
+            });
+          }
         });
       }
     });
